@@ -24,11 +24,3 @@ export interface RefreshTokenPayload {
   iat: number;
   exp: number;
 }
-
-/** The user shape the backend returns to clients — never includes the hash. */
-export interface PublicUser {
-  id: string;
-  email: string;
-  name: string | null;
-  role: UserRole;
-}

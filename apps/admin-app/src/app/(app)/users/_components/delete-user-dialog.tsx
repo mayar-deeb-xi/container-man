@@ -17,14 +17,14 @@ import {
 import { buttonVariants } from "@repo/ui/components/button";
 import { cn } from "@repo/ui/lib/utils";
 
-import type { AdminUser } from "~/services/users/types";
+import type { User } from "~/services/users/types";
 import { getApiErrorMessage } from "~/lib/axios";
 import { useDeleteUser } from "~/services/users/use-delete-user";
 import { displayName } from "./user-form-dialog";
 
 interface DeleteUserDialogProps {
   /** The user awaiting confirmation; `null` closes the dialog. */
-  user: AdminUser | null;
+  user: User | null;
   onOpenChange: (open: boolean) => void;
 }
 

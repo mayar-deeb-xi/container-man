@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 
-import type { PublicUser } from "@repo/auth";
 import {
   Card,
   CardContent,
@@ -11,9 +10,10 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 
+import type { SessionUser } from "~/services/auth/types";
 import { useSession } from "~/services/auth/use-session";
 
-export function UserCard({ initialUser }: { initialUser: PublicUser }) {
+export function UserCard({ initialUser }: { initialUser: SessionUser }) {
   const t = useTranslations("Dashboard.account");
 
   // Seeded from the server render, so there is no loading flash — the query then

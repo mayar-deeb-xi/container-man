@@ -3,10 +3,10 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 
-import type { PublicUser } from "@repo/auth";
 import { ACCESS_TOKEN_COOKIE } from "@repo/auth";
 
 import type { BaseResponse } from "~/lib/base-response";
+import type { SessionUser } from "~/services/auth/types";
 import { env } from "~/env";
 
 /**
@@ -21,7 +21,7 @@ import { env } from "~/env";
  * one `/auth/me` round trip per request instead of issuing one each. The cache is
  * scoped to a single render pass, so it can never leak across users or requests.
  */
-export const getServerSession = cache(async (): Promise<PublicUser | null> => {
+export const getServerSession = cache(async (): Promise<SessionUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE);
 
@@ -39,7 +39,7 @@ export const getServerSession = cache(async (): Promise<PublicUser | null> => {
     });
 
     if (!response.ok) return null;
-    const body = (await response.json()) as BaseResponse<PublicUser>;
+    const body = (await response.json()) as BaseResponse<SessionUser>;
     return body.data;
   } catch {
     // Backend unreachable — treat as signed out rather than crashing the render.

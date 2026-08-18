@@ -2,15 +2,15 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { AdminUser, UpdateUserPayload } from "./types";
+import type { UpdateUserPayload, User } from "./types";
 import type { BaseResponse } from "~/lib/base-response";
 import { api } from "~/lib/axios";
 import { sessionKey } from "../auth/use-session";
 import { userDetailKey } from "./use-user";
 import { usersKey } from "./use-users";
 
-export async function updateUser(id: string, payload: UpdateUserPayload): Promise<AdminUser> {
-  const { data } = await api.patch<BaseResponse<AdminUser>>(`/users/${id}`, payload);
+export async function updateUser(id: string, payload: UpdateUserPayload): Promise<User> {
+  const { data } = await api.patch<BaseResponse<User>>(`/users/${id}`, payload);
   return data.data;
 }
 

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import type { PublicUser } from "@repo/auth";
 import { Avatar, AvatarFallback } from "@repo/ui/components/avatar";
 import { useDirection } from "@repo/ui/components/direction-provider";
 import {
@@ -23,11 +22,12 @@ import {
   useSidebar,
 } from "@repo/ui/components/sidebar";
 
+import type { SessionUser } from "~/services/auth/types";
 import { useLogout } from "~/services/auth/use-logout";
 import { useSession } from "~/services/auth/use-session";
 
 /** Two letters from the name, or the email's first two — never an empty circle. */
-function initials(user: PublicUser): string {
+function initials(user: SessionUser): string {
   const source = user.name?.trim() || user.email;
   const parts = source.split(/[\s@._-]+/).filter(Boolean);
 
@@ -37,7 +37,7 @@ function initials(user: PublicUser): string {
   return source.slice(0, 2).toUpperCase();
 }
 
-export function NavUser({ user: initialUser }: { user: PublicUser }) {
+export function NavUser({ user: initialUser }: { user: SessionUser }) {
   const t = useTranslations("UserMenu");
   const { isMobile } = useSidebar();
   const direction = useDirection();

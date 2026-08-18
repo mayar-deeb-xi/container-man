@@ -2,13 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import type { AdminUser, CreateUserPayload } from "./types";
+import type { CreateUserPayload, User } from "./types";
 import type { BaseResponse } from "~/lib/base-response";
 import { api } from "~/lib/axios";
 import { usersKey } from "./use-users";
 
-export async function createUser(payload: CreateUserPayload): Promise<AdminUser> {
-  const { data } = await api.post<BaseResponse<AdminUser>>("/users", payload);
+export async function createUser(payload: CreateUserPayload): Promise<User> {
+  const { data } = await api.post<BaseResponse<User>>("/users", payload);
   return data.data;
 }
 

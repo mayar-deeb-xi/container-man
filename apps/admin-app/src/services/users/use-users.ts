@@ -3,7 +3,7 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import type { AdminUser, UsersPage, UsersQueryFilters } from "./types";
+import type { User, UsersPage, UsersQueryFilters } from "./types";
 import type { BaseResponse } from "~/lib/base-response";
 import { api } from "~/lib/axios";
 
@@ -18,7 +18,7 @@ export const usersKey = ["users"] as const;
 export const usersListKey = (filters: UsersQueryFilters) => [...usersKey, "list", filters] as const;
 
 export async function listUsers(filters: UsersQueryFilters): Promise<UsersPage> {
-  const { data } = await api.get<BaseResponse<AdminUser[]>>("/users", {
+  const { data } = await api.get<BaseResponse<User[]>>("/users", {
     // axios drops `undefined` params, so an unset filter never reaches the query
     // string — which matters because the backend rejects `role=""`.
     params: filters,

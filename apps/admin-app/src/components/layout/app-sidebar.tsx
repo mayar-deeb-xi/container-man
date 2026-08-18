@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
-import type { PublicUser } from "@repo/auth";
 import { useDirection } from "@repo/ui/components/direction-provider";
 import {
   Sidebar,
@@ -21,11 +20,12 @@ import {
 } from "@repo/ui/components/sidebar";
 import { siteName } from "@repo/white-label/admin-app";
 
+import type { SessionUser } from "~/services/auth/types";
 import { AppLogo } from "~/components/common/app-brand";
 import { isActiveHref, NAV_GROUPS } from "./nav-config";
 import { NavUser } from "./nav-user";
 
-export function AppSidebar({ user }: { user: PublicUser }) {
+export function AppSidebar({ user }: { user: SessionUser }) {
   const t = useTranslations("Nav");
   const pathname = usePathname();
   const direction = useDirection();

@@ -35,7 +35,7 @@ import {
 } from "@repo/ui/components/select";
 
 import type { UserFormInput } from "../_lib/schemas";
-import type { AdminUser, UpdateUserPayload } from "~/services/users/types";
+import type { UpdateUserPayload, User } from "~/services/users/types";
 import { getApiErrorMessage, isConflict } from "~/lib/axios";
 import { useCreateUser } from "~/services/users/use-create-user";
 import { useUpdateUser } from "~/services/users/use-update-user";
@@ -45,11 +45,11 @@ interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** The user being edited; absent means this is a create. */
-  user?: AdminUser | null;
+  user?: User | null;
 }
 
 /** What to call a user in a sentence — the name if there is one, else the email. */
-export function displayName(user: Pick<AdminUser, "name" | "email">): string {
+export function displayName(user: Pick<User, "name" | "email">): string {
   return user.name?.trim() || user.email;
 }
 

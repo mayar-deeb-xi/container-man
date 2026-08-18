@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
-import type { UserRole } from "@repo/auth";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { useDirection } from "@repo/ui/components/direction-provider";
@@ -32,7 +31,8 @@ import {
   TableRow,
 } from "@repo/ui/components/table";
 
-import type { AdminUser } from "~/services/users/types";
+import type { UserRole } from "~/services/auth/types";
+import type { User } from "~/services/users/types";
 import { useUsers } from "~/services/users/use-users";
 import { useDebouncedValue } from "../_lib/use-debounced-value";
 import { DeleteUserDialog } from "./delete-user-dialog";
@@ -53,9 +53,9 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
   const [role, setRole] = useState<UserRole | typeof ANY_ROLE>(ANY_ROLE);
   const [skip, setSkip] = useState(0);
 
-  const [formUser, setFormUser] = useState<AdminUser | null>(null);
+  const [formUser, setFormUser] = useState<User | null>(null);
   const [isFormOpen, setFormOpen] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<AdminUser | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<User | null>(null);
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -92,7 +92,7 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
     setFormOpen(true);
   }
 
-  function openEdit(user: AdminUser) {
+  function openEdit(user: User) {
     setFormUser(user);
     setFormOpen(true);
   }

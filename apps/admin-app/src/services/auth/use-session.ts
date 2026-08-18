@@ -3,9 +3,8 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 
-import type { PublicUser } from "@repo/auth";
-
 import type { BaseResponse } from "~/lib/base-response";
+import type { SessionUser } from "~/services/auth/types";
 import { api, isUnauthorized } from "~/lib/axios";
 
 /**
@@ -22,12 +21,12 @@ export const sessionKey = ["session"] as const;
  * callers (server components, scripts) can reuse it without pulling in React
  * Query.
  */
-export async function getMe(): Promise<PublicUser> {
-  const { data } = await api.get<BaseResponse<PublicUser>>("/auth/me");
+export async function getMe(): Promise<SessionUser> {
+  const { data } = await api.get<BaseResponse<SessionUser>>("/auth/me");
   return data.data;
 }
 
-export function useSession(): UseQueryResult<PublicUser, unknown> {
+export function useSession(): UseQueryResult<SessionUser, unknown> {
   return useQuery({
     queryKey: sessionKey,
     queryFn: getMe,
