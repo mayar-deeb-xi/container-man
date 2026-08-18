@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Boxes } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Card, CardContent } from "@repo/ui/components/card";
 import { siteName } from "@repo/white-label/admin-app";
+
+import { getServerAbility } from "~/lib/ability";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Containers");
@@ -12,6 +15,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ContainersPage() {
   const t = await getTranslations("Containers");
+
+  // Gated even though there is nothing here yet: `Container` is a subject an operator
+  // can already write rules against, so the route has to honour them from the start —
+  // otherwise the first real data would arrive behind a page that never checked.
+  const ability = await getServerAbility();
+  if (!ability.can("read", "Container")) {
+    notFound();
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-6">

@@ -33,11 +33,12 @@ export function createUserFormSchema(
     .min(PASSWORD_MIN, { error: messages.passwordMin })
     .max(PASSWORD_MAX, { error: messages.passwordMax });
 
+  // Roles are not in the schema: they are a set of ids chosen from what the API lists,
+  // with nothing to validate beyond "these exist" — which only the API can answer.
   return z.object({
     name: z.string().max(NAME_MAX, { error: messages.nameMax }),
     email: z.email({ error: messages.emailInvalid }),
     password: requirePassword ? password : z.literal("").or(password),
-    role: z.enum(["admin", "user"]),
   });
 }
 

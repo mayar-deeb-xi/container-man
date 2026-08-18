@@ -16,7 +16,8 @@
     "users": "Users",
     "settings": "Settings",
     "support": "Support",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "roles": "Roles"
   },
   "Theme": {
     "toggle": "Toggle theme",
@@ -65,9 +66,10 @@
       "description": "Details for the currently signed-in user.",
       "name": "Name",
       "email": "Email",
-      "role": "Role",
       "userId": "User ID",
-      "empty": "—"
+      "empty": "—",
+      "roles": "Roles",
+      "noRoles": "No roles"
     }
   },
   "Users": {
@@ -80,23 +82,19 @@
     "loadError": "Could not load users.",
     "empty": "No users yet.",
     "noResults": "No users match these filters.",
-    "roles": {
-      "all": "All roles",
-      "admin": "Admin",
-      "user": "User"
-    },
     "columns": {
       "name": "Name",
       "email": "Email",
-      "role": "Role",
       "created": "Created",
-      "actions": "Actions"
+      "actions": "Actions",
+      "roles": "Roles"
     },
     "actions": {
       "label": "Open actions",
       "edit": "Edit",
       "delete": "Delete",
-      "deleteSelf": "You cannot delete your own account"
+      "deleteSelf": "You cannot delete your own account",
+      "manageRoles": "Manage roles"
     },
     "pagination": {
       "summary": "{from}–{to} of {total}",
@@ -116,14 +114,16 @@
       "password": "Password",
       "newPassword": "New password",
       "passwordHint": "Signs the user out of every device.",
-      "role": "Role",
       "submitCreate": "Create user",
       "submitEdit": "Save changes",
       "submitting": "Saving…",
       "createSuccess": "{name} was created.",
       "editSuccess": "{name} was updated.",
       "emailTaken": "That email is already taken",
-      "error": "Could not save the user. Please try again."
+      "error": "Could not save the user. Please try again.",
+      "roles": "Roles",
+      "rolesHint": "Leave empty to use the default role. Roles can be changed later.",
+      "rolesLoading": "No roles available."
     },
     "remove": {
       "title": "Delete {name}?",
@@ -138,6 +138,34 @@
       "passwordMin": "Password must be at least {min} characters",
       "passwordMax": "Password is too long",
       "nameMax": "Name is too long"
+    },
+    "noRoles": "No roles",
+    "roleFilter": {
+      "all": "All roles"
+    },
+    "access": {
+      "title": "Access",
+      "back": "Back to users",
+      "loadError": "Could not load this user.",
+      "roles": {
+        "title": "Roles",
+        "description": "Everything this person may do comes from the roles checked here.",
+        "selfNotice": "These are your own roles. Another administrator has to change them — the API refuses to let anyone edit their own.",
+        "empty": "No roles exist yet. Create one first.",
+        "noDescription": "No description.",
+        "viewPermissions": "View permissions",
+        "loadError": "Could not load roles.",
+        "saved": "Roles updated.",
+        "error": "Could not update the roles. Please try again."
+      },
+      "effective": {
+        "title": "Effective permissions",
+        "description": "What the roles above add up to, resolved by the API exactly as it enforces them.",
+        "empty": "This account cannot do anything yet.",
+        "denied": "Denied",
+        "onlyWhere": "Only where:",
+        "loadError": "Could not load the effective permissions."
+      }
     }
   },
   "Containers": {
@@ -163,5 +191,129 @@
     "email": "Email",
     "phone": "Phone",
     "address": "Address"
+  },
+  "Roles": {
+    "title": "Roles",
+    "description": "Roles group permissions, and users hold as many roles as they need.",
+    "add": "Add role",
+    "searchPlaceholder": "Search by name or key",
+    "searchLabel": "Search roles",
+    "system": "System",
+    "locked": "Locked",
+    "lockedHint": "This role always has full access, so its permissions cannot be edited.",
+    "loadError": "Could not load roles.",
+    "empty": "No roles yet.",
+    "noResults": "No roles match this search.",
+    "columns": {
+      "name": "Role",
+      "key": "Key",
+      "permissions": "Permissions",
+      "users": "Users",
+      "actions": "Actions"
+    },
+    "actions": {
+      "label": "Open actions",
+      "permissions": "Edit permissions",
+      "edit": "Edit role",
+      "delete": "Delete",
+      "deleteSystem": "System roles cannot be deleted",
+      "deleteHeld": "{count, plural, one {# user holds this role} other {# users hold this role}}"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "createTitle": "Add role",
+      "createDescription": "Name the role now and choose what it grants next.",
+      "editTitle": "Edit role",
+      "editDescription": "The key is what code and links refer to, so change it with care.",
+      "name": "Name",
+      "namePlaceholder": "Release manager",
+      "key": "Key",
+      "keyPlaceholder": "release-manager",
+      "keyHint": "Lowercase letters, digits and dashes. Used in links and in code.",
+      "keySystemHint": "A system role's key cannot be changed.",
+      "keyTaken": "That key is already taken",
+      "description": "Description",
+      "descriptionPlaceholder": "What this role is for",
+      "descriptionOptional": "Optional",
+      "submitCreate": "Create role",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{name} was created.",
+      "editSuccess": "{name} was updated.",
+      "error": "Could not save the role. Please try again."
+    },
+    "remove": {
+      "title": "Delete {name}?",
+      "description": "The role and everything it grants are removed. Users must be reassigned before a role can be deleted.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "success": "{name} was deleted.",
+      "error": "Could not delete the role. Please try again."
+    },
+    "detail": {
+      "title": "Role permissions",
+      "back": "Back to roles",
+      "loadError": "Could not load this role.",
+      "holders": "{count, plural, =0 {No users hold this role} one {# user holds this role} other {# users hold this role}}"
+    },
+    "subjects": {
+      "all": "Everything",
+      "allHint": "Overrides every row below.",
+      "User": "Users",
+      "UserHint": "Console accounts.",
+      "Role": "Roles",
+      "RoleHint": "Roles and the permissions they grant.",
+      "Container": "Containers",
+      "ContainerHint": "Everything running under this console."
+    },
+    "matrix": {
+      "subject": "Subject",
+      "lockedNotice": "This role always has full access. Its permissions are fixed in code so an install can never be left with nobody able to administer it.",
+      "managesAll": "Full access to this subject.",
+      "hasDetails": "Has conditions, field limits or a denial",
+      "invalid": "Invalid",
+      "detailsTitle": "Rule details",
+      "detailsDescription": "Narrow a granted permission to certain records or fields, or turn it into an explicit denial.",
+      "deny": "Deny",
+      "conditional": "Conditional",
+      "fieldLimited": "Fields",
+      "conditions": "Conditions",
+      "conditionsHint": "A JSON object matched against the record. Use {userId} or {userEmail} to refer to the signed-in user.",
+      "invalidJson": "This is not valid JSON.",
+      "notAnObject": "Conditions must be a JSON object.",
+      "fields": "Fields",
+      "fieldsPlaceholder": "name, description",
+      "fieldsHint": "Comma-separated. Leave empty to allow every field.",
+      "inverted": "Make this a denial",
+      "invertedHint": "A denial wins over any permission that overlaps it, including full access.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Auditors never delete containers",
+      "reasonHint": "Shown to the user when this denial is what refused them.",
+      "unsaved": "Unsaved changes",
+      "upToDate": "Up to date",
+      "reset": "Reset",
+      "fixErrors": "Some rules could not be saved — check the highlighted ones.",
+      "saved": "{name}'s permissions were saved.",
+      "saveError": "Could not save the permissions. Please try again."
+    },
+    "verbs": {
+      "manage": "Manage",
+      "create": "Create",
+      "read": "Read",
+      "update": "Update",
+      "delete": "Delete"
+    },
+    "validation": {
+      "keyRequired": "A key of at least 2 characters is required",
+      "keyPattern": "Use lowercase letters, digits and dashes, starting with a letter",
+      "keyMax": "Key is too long",
+      "nameRequired": "A name is required",
+      "nameMax": "Name is too long",
+      "descriptionMax": "Description is too long"
+    }
   }
 }

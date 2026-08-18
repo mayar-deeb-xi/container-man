@@ -1,7 +1,5 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
-
-import { userRole } from "@repo/db";
+import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
 import { NAME_MAX, PASSWORD_MAX, PASSWORD_MIN } from "./create-user.dto";
 
@@ -12,6 +10,11 @@ import { NAME_MAX, PASSWORD_MAX, PASSWORD_MIN } from "./create-user.dto";
  * Written out instead of `PartialType(CreateUserDto)` to avoid pulling in
  * `@nestjs/mapped-types` for one class, and because `name` differs: it is
  * nullable here, so clearing it is expressible.
+ *
+ * Roles are absent on purpose. Replacing a set has one sensible verb — PUT
+ * /users/:id/roles — and folding it in here would make an omitted `roleIds` mean
+ * "leave them" while `[]` meant "strip everything", one typo apart. Keeping it out
+ * also puts the self-lockout check in exactly one place.
  */
 export class UpdateUserDto {
   @Transform(({ value }) => (typeof value === "string" ? value.trim().toLowerCase() : value))
@@ -32,8 +35,4 @@ export class UpdateUserDto {
   @MaxLength(NAME_MAX)
   @IsOptional()
   name?: string | null;
-
-  @IsIn(userRole.enumValues)
-  @IsOptional()
-  role?: (typeof userRole.enumValues)[number];
 }

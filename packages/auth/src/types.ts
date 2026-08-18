@@ -1,11 +1,16 @@
-export type UserRole = "admin" | "user";
-
-/** Claims carried by the short-lived access token. */
+/**
+ * Claims carried by the short-lived access token.
+ *
+ * Deliberately carries no authorization: there is no `role` claim, and no packed
+ * rule set. A token is valid for fifteen minutes, so anything about *what the
+ * bearer may do* would be fifteen minutes stale — a user whose roles were just
+ * revoked would keep acting on the old ones. Identity is what a token can prove;
+ * abilities are resolved from the database on every request that needs them.
+ */
 export interface AccessTokenPayload {
   /** User id. */
   sub: string;
   email: string;
-  role: UserRole;
   /** Session id this token was issued under. */
   sid: string;
   iat: number;

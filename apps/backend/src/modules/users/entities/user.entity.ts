@@ -1,6 +1,18 @@
-import { Exclude, Expose } from "class-transformer";
+import { Exclude, Expose, Type } from "class-transformer";
 
-import type { UserRole } from "@repo/auth";
+import type { AppAction, AppSubject } from "@repo/access";
+
+/**
+ * A role on a user, reduced to what a row or a chip needs. The rules behind it are
+ * not included: a page of users would become a page of rule sets, and what a role
+ * grants is the roles console's subject, not this one's.
+ */
+@Exclude()
+export class UserRoleEntity {
+  @Expose() id: string;
+  @Expose() key: string;
+  @Expose() name: string;
+}
 
 /**
  * Serialization allowlist for the user-management payload: the account record as
@@ -26,7 +38,34 @@ export class UserEntity {
   @Expose() id: string;
   @Expose() email: string;
   @Expose() name: string | null;
-  @Expose() role: UserRole;
   @Expose() createdAt: Date;
   @Expose() updatedAt: Date;
+
+  /**
+   * Every role the user holds. This replaced a single `role` field, and the plural is
+   * the whole point: abilities are the union of what these grant, so there is no
+   * primary one to single out. `@Type` is what makes the nested allowlist run.
+   */
+  @Expose()
+  @Type(() => UserRoleEntity)
+  roles: UserRoleEntity[];
+}
+
+/**
+ * One rule from a user's effective rule set — what their roles add up to, after
+ * placeholders are resolved.
+ *
+ * Serialized through an allowlist like everything else, even though these objects are
+ * built by `@repo/access` rather than read from a table. Consistency is the point: a
+ * route that returns something un-allowlisted is the exception nobody notices, and the
+ * shape here is the wire contract the console's `<Can>` is built against.
+ */
+@Exclude()
+export class EffectiveRuleEntity {
+  @Expose() action: AppAction;
+  @Expose() subject: AppSubject;
+  @Expose() conditions?: Record<string, unknown> | null;
+  @Expose() fields?: string[] | null;
+  @Expose() inverted?: boolean;
+  @Expose() reason?: string | null;
 }

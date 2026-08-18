@@ -30,7 +30,12 @@ export function UserCard({ initialUser }: { initialUser: SessionUser }) {
       <CardContent className="grid gap-2 text-sm">
         <Row label={t("name")} value={current.name ?? t("empty")} />
         <Row label={t("email")} value={current.email} />
-        <Row label={t("role")} value={current.role} />
+        {/* Joined rather than listed as chips: this card is a definition list of short
+            values, and a user with one role — the common case — should read as one line. */}
+        <Row
+          label={t("roles")}
+          value={current.roles.map((role) => role.name).join(", ") || t("noRoles")}
+        />
         <Row label={t("userId")} value={current.id} mono />
       </CardContent>
     </Card>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
@@ -31,8 +32,9 @@ import {
   TableRow,
 } from "@repo/ui/components/table";
 
-import type { UserRole } from "~/services/auth/types";
 import type { User } from "~/services/users/types";
+import { Can, useCan } from "~/components/providers/ability-provider";
+import { useRoles } from "~/services/roles/use-roles";
 import { useUsers } from "~/services/users/use-users";
 import { useDebouncedValue } from "../_lib/use-debounced-value";
 import { DeleteUserDialog } from "./delete-user-dialog";
@@ -43,14 +45,24 @@ const PAGE_SIZE = 10;
 /** The role filter's "no filter" option — a Radix Select cannot hold an empty value. */
 const ANY_ROLE = "all";
 
-export function UsersTable({ currentUserId }: { currentUserId: string }) {
+/** Every role an install has fits in the filter's dropdown; there is no paging in it. */
+const ROLE_LIMIT = 100;
+
+export function UsersTable({
+  currentUserId,
+  initialRoleKey,
+}: {
+  currentUserId: string;
+  /** Seeded from `?roleKey=`, so a link from the roles console arrives pre-filtered. */
+  initialRoleKey?: string;
+}) {
   const t = useTranslations("Users");
   const tc = useTranslations("Common");
   const format = useFormatter();
   const direction = useDirection();
 
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState<UserRole | typeof ANY_ROLE>(ANY_ROLE);
+  const [roleKey, setRoleKey] = useState(initialRoleKey ?? ANY_ROLE);
   const [skip, setSkip] = useState(0);
 
   const [formUser, setFormUser] = useState<User | null>(null);
@@ -63,23 +75,37 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
   // table for a filter that does have matches — they are just all on page 1.
   useEffect(() => {
     setSkip(0);
-  }, [debouncedSearch, role]);
+  }, [debouncedSearch, roleKey]);
 
   const filters = useMemo(
     () => ({
       skip,
       take: PAGE_SIZE,
       search: debouncedSearch || undefined,
-      role: role === ANY_ROLE ? undefined : role,
+      roleKey: roleKey === ANY_ROLE ? undefined : roleKey,
     }),
-    [skip, debouncedSearch, role],
+    [skip, debouncedSearch, roleKey],
   );
 
   const { data, isPending, isError, isPlaceholderData, refetch } = useUsers(filters);
 
+  // The filter's options are the roles that exist, not a hard-coded pair — which is the
+  // whole point of roles being data. Someone without `read Role` gets no dropdown at all,
+  // and the query is disabled so their console does not carry a 403 for a control they
+  // were never shown.
+  const canReadRoles = useCan("read", "Role");
+  const roleOptions = useRoles(
+    useMemo(() => ({ skip: 0, take: ROLE_LIMIT }), []),
+    { enabled: canReadRoles },
+  );
+  const roles = roleOptions.data?.roles ?? [];
+
+  const canDelete = useCan("delete", "User");
+  const canUpdate = useCan("update", "User");
+
   const users = data?.users ?? [];
   const total = data?.pagination.total ?? 0;
-  const hasFilters = Boolean(debouncedSearch) || role !== ANY_ROLE;
+  const hasFilters = Boolean(debouncedSearch) || roleKey !== ANY_ROLE;
   const isLastPage = skip + PAGE_SIZE >= total;
 
   // Reading order, not physical direction: "previous" points back the way the
@@ -111,24 +137,28 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
           />
         </div>
 
-        <Select
-          value={role}
-          onValueChange={(value) => setRole(value as UserRole | typeof ANY_ROLE)}
-        >
-          <SelectTrigger className="sm:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY_ROLE}>{t("roles.all")}</SelectItem>
-            <SelectItem value="admin">{t("roles.admin")}</SelectItem>
-            <SelectItem value="user">{t("roles.user")}</SelectItem>
-          </SelectContent>
-        </Select>
+        {canReadRoles ? (
+          <Select value={roleKey} onValueChange={setRoleKey}>
+            <SelectTrigger className="sm:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_ROLE}>{t("roleFilter.all")}</SelectItem>
+              {roles.map((option) => (
+                <SelectItem key={option.id} value={option.key}>
+                  {option.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
 
-        <Button onClick={openCreate}>
-          <Plus />
-          {t("add")}
-        </Button>
+        <Can I="create" a="User">
+          <Button onClick={openCreate}>
+            <Plus />
+            {t("add")}
+          </Button>
+        </Can>
       </div>
 
       <div className="rounded-xl border">
@@ -137,7 +167,7 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
             <TableRow>
               <TableHead>{t("columns.name")}</TableHead>
               <TableHead>{t("columns.email")}</TableHead>
-              <TableHead>{t("columns.role")}</TableHead>
+              <TableHead>{t("columns.roles")}</TableHead>
               <TableHead>{t("columns.created")}</TableHead>
               <TableHead className="w-12">
                 <span className="sr-only">{t("columns.actions")}</span>
@@ -183,9 +213,20 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
                       {user.email}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "outline"}>
-                        {t(`roles.${user.role}`)}
-                      </Badge>
+                      {/* Every role, as chips. A user's abilities are the union of these,
+                          so showing only the "highest" would be a fiction — there is no
+                          ordering between them. */}
+                      {user.roles.length === 0 ? (
+                        <span className="text-muted-foreground text-xs">{t("noRoles")}</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles.map((role) => (
+                            <Badge key={role.id} variant="secondary">
+                              {role.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {/* Fixed to UTC so the server and client renders agree — a
@@ -198,28 +239,42 @@ export function UsersTable({ currentUserId }: { currentUserId: string }) {
                       })}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label={t("actions.label")}>
-                            <MoreHorizontal />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(user)}>
-                            {t("actions.edit")}
-                          </DropdownMenuItem>
-                          {/* The backend refuses this one; disabling it here means
-                              finding that out before clicking rather than after. */}
-                          <DropdownMenuItem
-                            variant="destructive"
-                            disabled={isSelf}
-                            title={isSelf ? t("actions.deleteSelf") : undefined}
-                            onClick={() => setPendingDelete(user)}
-                          >
-                            {t("actions.delete")}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {canReadRoles || canUpdate || canDelete ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" aria-label={t("actions.label")}>
+                              <MoreHorizontal />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {/* Roles live on their own page rather than in the edit dialog:
+                                the assignment is one request, and the page beside it shows
+                                what those roles actually resolve to. */}
+                            {canReadRoles ? (
+                              <DropdownMenuItem asChild>
+                                <Link href={`/users/${user.id}`}>{t("actions.manageRoles")}</Link>
+                              </DropdownMenuItem>
+                            ) : null}
+                            <Can I="update" a="User">
+                              <DropdownMenuItem onClick={() => openEdit(user)}>
+                                {t("actions.edit")}
+                              </DropdownMenuItem>
+                            </Can>
+                            <Can I="delete" a="User">
+                              {/* The backend refuses this one; disabling it here means
+                                  finding that out before clicking rather than after. */}
+                              <DropdownMenuItem
+                                variant="destructive"
+                                disabled={isSelf}
+                                title={isSelf ? t("actions.deleteSelf") : undefined}
+                                onClick={() => setPendingDelete(user)}
+                              >
+                                {t("actions.delete")}
+                              </DropdownMenuItem>
+                            </Can>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 );

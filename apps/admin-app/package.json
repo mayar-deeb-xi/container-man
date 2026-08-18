@@ -12,7 +12,9 @@
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
+    "@casl/ability": "^6.7.3",
     "@hookform/resolvers": "^5.9.1",
+    "@repo/access": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/ui": "workspace:*",
     "@repo/white-label": "workspace:*",

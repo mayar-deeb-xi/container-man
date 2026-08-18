@@ -1,5 +1,5 @@
 import type { Pagination } from "~/lib/base-response";
-import type { UserRole } from "~/services/auth/types";
+import type { AppRule, SessionRole } from "~/services/auth/types";
 
 /**
  * Client-side mirror of what `/users` returns — the users module's `UserEntity`,
@@ -20,17 +20,29 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
-  role: UserRole;
+  /**
+   * Every role the account holds. Plural, with no primary one: abilities are the union
+   * of what these grant, so singling one out would misrepresent the model.
+   *
+   * The element type is shared with the session's roles rather than restated — "a role,
+   * named" is one shape, and two copies of three fields would only invite them to
+   * disagree about which is authoritative.
+   */
+  roles: SessionRole[];
   createdAt: string;
   updatedAt: string;
 }
+
+/** One rule from a user's effective set — their roles, resolved and flattened. */
+export type EffectiveRule = AppRule;
 
 /** The filters that make one page of users a distinct query — and cache entry. */
 export interface UsersQueryFilters {
   skip: number;
   take: number;
   search?: string;
-  role?: UserRole;
+  /** A role's key, not its id: it is what the API filters on and what reads in a URL. */
+  roleKey?: string;
 }
 
 export interface UsersPage {
@@ -42,14 +54,20 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   name?: string;
-  role?: UserRole;
+  /** Omitted means the backend's default role; `[]` means an account that can do nothing. */
+  roleIds?: string[];
 }
 
-/** Every field optional — an absent key leaves that column alone. */
+/**
+ * Every field optional — an absent key leaves that column alone.
+ *
+ * Roles are not here: they are replaced as a set through `useSetUserRoles`, which is
+ * the same split the API makes and for the same reason — an omitted `roleIds` meaning
+ * "leave them" while `[]` meant "strip everything" is one typo apart.
+ */
 export interface UpdateUserPayload {
   email?: string;
   password?: string;
   /** `null` clears the name; `undefined` leaves it as it was. */
   name?: string | null;
-  role?: UserRole;
 }

@@ -43,7 +43,13 @@
     "db:seed": {
       "dependsOn": ["^build"],
       "cache": false,
-      "env": ["SEED_ADMIN_EMAIL", "SEED_ADMIN_PASSWORD", "SEED_ADMIN_NAME"]
+      "env": [
+        "SEED_ADMIN_EMAIL",
+        "SEED_ADMIN_PASSWORD",
+        "SEED_ADMIN_NAME",
+        "SEED_DEMO",
+        "SEED_DEMO_PASSWORD"
+      ]
     },
     "db:studio": {
       "cache": false,

@@ -4,8 +4,11 @@ import { ConfigModule } from "@nestjs/config";
 import { AppConfigService } from "./config/app-config.service";
 import { findRootEnvFile, validate } from "./config/env";
 import { HealthController } from "./health.controller";
+import { AbilityModule } from "./lib/ability/ability.module";
 import { DbModule } from "./lib/db/db.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { PermissionsModule } from "./modules/permissions/permissions.module";
+import { RolesModule } from "./modules/roles/roles.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Global()
@@ -19,7 +22,10 @@ import { UsersModule } from "./modules/users/users.module";
       cache: true,
     }),
     DbModule,
+    AbilityModule,
     UsersModule,
+    RolesModule,
+    PermissionsModule,
     AuthModule,
   ],
   controllers: [HealthController],

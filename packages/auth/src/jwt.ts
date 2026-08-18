@@ -1,6 +1,6 @@
 import { errors, jwtVerify, SignJWT } from "jose";
 
-import type { AccessTokenPayload, RefreshTokenPayload, UserRole } from "./types";
+import type { AccessTokenPayload, RefreshTokenPayload } from "./types";
 
 const ALGORITHM = "HS256";
 
@@ -21,7 +21,6 @@ export type VerifyResult<T> =
 export interface AccessTokenInput {
   userId: string;
   email: string;
-  role: UserRole;
   sessionId: string;
 }
 
@@ -30,7 +29,7 @@ export async function signAccessToken(
   secret: string,
   ttl: string,
 ): Promise<string> {
-  return new SignJWT({ email: input.email, role: input.role, sid: input.sessionId })
+  return new SignJWT({ email: input.email, sid: input.sessionId })
     .setProtectedHeader({ alg: ALGORITHM })
     .setSubject(input.userId)
     .setIssuedAt()

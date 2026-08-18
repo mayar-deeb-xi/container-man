@@ -1,39 +1,38 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
-import { and, count, desc, eq, ilike, isNull, or } from "drizzle-orm";
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { and, count, desc, eq, exists, ilike, inArray, isNull, ne, or } from "drizzle-orm";
 
+import type { AppAbility, AppRule } from "@repo/access";
 import type { User } from "@repo/db";
+import { asSubject, DEFAULT_ROLE_KEY, SUPER_ROLE_KEY } from "@repo/access";
 import { hashPassword } from "@repo/auth/password";
-import { sessions, users } from "@repo/db";
+import { roles, sessions, userRoles, users } from "@repo/db";
 
 import type { BaseResponse } from "../../lib/base.dto";
 import type { Database } from "../../lib/db/db.module";
+import type { RoleRef } from "../roles/roles.service";
 import type { CreateUserDto } from "./dto/create-user.dto";
 import type { ListUsersDto } from "./dto/list-users.dto";
+import type { SetUserRolesDto } from "./dto/set-user-roles.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
+import type { UserEntity } from "./entities/user.entity";
+import { AbilityService } from "../../lib/ability/ability.service";
 import { DRIZZLE } from "../../lib/db/db.module";
-import { UserEntity } from "./entities/user.entity";
-
-/**
- * Escapes the wildcards Postgres' LIKE grammar reserves.
- *
- * Without this a search for `_` or `%` matches every row rather than the rows
- * containing that character — surprising, and a cheap way to make the query scan
- * the whole table.
- */
-function escapeLike(term: string): string {
-  return term.replace(/[\\%_]/g, (char) => `\\${char}`);
-}
-
-/** Postgres' unique_violation. Reached only when a concurrent insert wins the race. */
-function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" && error !== null && (error as { code?: string }).code === "23505"
-  );
-}
+import { escapeLike, isUniqueViolation } from "../../lib/sql.utils";
+import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: Database,
+    private readonly roles: RolesService,
+    private readonly abilities: AbilityService,
+  ) {}
 
   /**
    * Every read below filters on `deleted_at is null`. That predicate is the whole
@@ -58,14 +57,37 @@ export class UsersService {
     return user;
   }
 
-  async list(query: ListUsersDto): Promise<BaseResponse<UserEntity[]>> {
-    const { skip, take, search, role } = query;
+  /**
+   * A page of users, filtered by whatever the caller's own `read User` rules allow.
+   *
+   * `ability` is applied per row rather than compiled into the SQL. Conditions are
+   * MongoDB-style queries, and translating them into Drizzle predicates would be a
+   * second query compiler to keep correct — so the rows are fetched and then tested with
+   * the same evaluator the guards use. The trade-off is deliberate and worth stating:
+   * `total` counts what the SQL matched, so a caller whose `read User` is conditional
+   * sees an over-count and possibly a short page. Showing a row a rule forbids would be
+   * the far worse failure, and refusing the endpoint outright would break the ordinary
+   * unconditional case that every operator uses.
+   */
+  async list(query: ListUsersDto, ability: AppAbility): Promise<BaseResponse<UserEntity[]>> {
+    const { skip, take, search, roleKey } = query;
 
     const term = search ? `%${escapeLike(search)}%` : undefined;
     const where = and(
       isNull(users.deletedAt),
-      role ? eq(users.role, role) : undefined,
       term ? or(ilike(users.email, term), ilike(users.name, term)) : undefined,
+      // `exists` rather than a join: a user with three roles must still be one row, and
+      // joining then de-duplicating would make `take` mean something other than "this
+      // many users".
+      roleKey
+        ? exists(
+            this.db
+              .select({ one: userRoles.userId })
+              .from(userRoles)
+              .innerJoin(roles, eq(roles.id, userRoles.roleId))
+              .where(and(eq(userRoles.userId, users.id), eq(roles.key, roleKey))),
+          )
+        : undefined,
     );
 
     // The count runs alongside the page rather than after it: the two are
@@ -85,15 +107,33 @@ export class UsersService {
       this.db.select({ total: count() }).from(users).where(where),
     ]);
 
-    return { data: rows, pagination: { skip, take, total: totals?.total ?? 0 } };
+    // One extra query for the whole page rather than one per row: the roles cannot be
+    // selected alongside the users without multiplying the rows, and N+1 here would be
+    // N+1 on the console's busiest screen.
+    const visible = rows.filter((row) => ability.can("read", asSubject("User", row)));
+    const rolesByUser = await this.roles.forUsers(visible.map((row) => row.id));
+
+    return {
+      data: visible.map((row) => ({ ...row, roles: rolesByUser.get(row.id) ?? [] })),
+      pagination: { skip, take, total: totals?.total ?? 0 },
+    };
   }
 
-  async findOne(id: string): Promise<BaseResponse<UserEntity>> {
+  async findOne(id: string, ability?: AppAbility): Promise<BaseResponse<UserEntity>> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    return { data: user };
+
+    // 404 rather than 403 when a condition excludes the row: the caller was told they
+    // may read users, so naming this one as forbidden would confirm it exists to someone
+    // whose rules were written to keep it out of view.
+    if (ability && !ability.can("read", asSubject("User", user))) {
+      throw new NotFoundException("User not found");
+    }
+
+    const rolesByUser = await this.roles.forUsers([id]);
+    return { data: { ...user, roles: rolesByUser.get(id) ?? [] } };
   }
 
   async create(dto: CreateUserDto): Promise<BaseResponse<UserEntity>> {
@@ -103,20 +143,37 @@ export class UsersService {
       throw new ConflictException("A user with that email already exists");
     }
 
+    // Resolved before the insert: an unknown role id should be a 400 with no account
+    // created, not an account that quietly holds nothing.
+    const granted = dto.roleIds
+      ? await this.roles.requireRoles(dto.roleIds)
+      : await this.defaultRoles();
+
     const passwordHash = await hashPassword(dto.password);
 
     try {
-      const [user] = await this.db
-        .insert(users)
-        .values({
-          email: dto.email,
-          passwordHash,
-          name: dto.name ?? null,
-          role: dto.role ?? "user",
-        })
-        .returning();
+      const user = await this.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(users)
+          .values({
+            email: dto.email,
+            passwordHash,
+            name: dto.name ?? null,
+          })
+          .returning();
 
-      return { data: user! };
+        if (!created) throw new ConflictException("A user with that email already exists");
+
+        if (granted.length > 0) {
+          await tx
+            .insert(userRoles)
+            .values(granted.map((role) => ({ userId: created.id, roleId: role.id })));
+        }
+
+        return created;
+      });
+
+      return { data: { ...user, roles: granted } };
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -125,11 +182,21 @@ export class UsersService {
     }
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<BaseResponse<UserEntity>> {
+  async update(
+    id: string,
+    dto: UpdateUserDto,
+    ability: AppAbility,
+  ): Promise<BaseResponse<UserEntity>> {
     const existing = await this.findById(id);
     if (!existing) {
       throw new NotFoundException("User not found");
     }
+
+    // The route guard only established that the caller may update *some* user — it had no
+    // row to test conditions against. This is where "update your own account only"
+    // actually takes effect; without it a conditional grant would be silently ignored,
+    // which is the most dangerous kind of ignored.
+    this.assertAllowed(ability, "update", existing);
 
     if (dto.email && dto.email !== existing.email) {
       const clash = await this.findByEmail(dto.email);
@@ -157,7 +224,7 @@ export class UsersService {
     // "No values to set" when every value is undefined, so this is the guard for
     // that too.
     if (Object.values(patch).every((value) => value === undefined)) {
-      return { data: existing };
+      return this.findOne(id, ability);
     }
 
     try {
@@ -172,15 +239,16 @@ export class UsersService {
         throw new NotFoundException("User not found");
       }
 
-      // A new password or a lost privilege has to take effect now, not in fifteen
-      // minutes: the access token carries `role`, and its bearer keeps whatever it
-      // was minted with until it expires. Revoking the sessions forces a fresh
-      // login, which is the only way to reissue those claims.
-      if (patch.passwordHash !== undefined || (patch.role && patch.role !== existing.role)) {
+      // A new password has to take effect now, not in fifteen minutes: the sessions
+      // holding the old one would keep minting access tokens for it. Roles are absent
+      // from this list on purpose — the token carries no authorization any more, so a
+      // permission change is live on the next request without touching sessions.
+      if (patch.passwordHash !== undefined) {
         await this.revokeSessions(id);
       }
 
-      return { data: user };
+      const rolesByUser = await this.roles.forUsers([id]);
+      return { data: { ...user, roles: rolesByUser.get(id) ?? [] } };
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -189,15 +257,104 @@ export class UsersService {
     }
   }
 
+  /** The roles one user holds — what the assignment editor loads. */
+  async rolesOf(id: string): Promise<BaseResponse<RoleRef[]>> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const rolesByUser = await this.roles.forUsers([id]);
+    return { data: rolesByUser.get(id) ?? [] };
+  }
+
+  /**
+   * Replaces the set of roles a user holds.
+   *
+   * Takes effect immediately, with no session revocation: abilities are resolved from
+   * these rows on every request that needs them, so the next call the user makes is
+   * already governed by the new set. That is the payoff for keeping authorization out
+   * of the access token.
+   */
+  async setRoles(
+    id: string,
+    dto: SetUserRolesDto,
+    actorId: string,
+    ability: AppAbility,
+  ): Promise<BaseResponse<RoleRef[]>> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    this.assertAllowed(ability, "update", user);
+
+    // Editing your own roles is a one-way door: `update User` is itself a permission,
+    // so the moment it lands you may no longer be able to reach this endpoint to undo
+    // it. The API refuses for the same reason it refuses self-deletion.
+    if (id === actorId) {
+      throw new ForbiddenException("You cannot change your own roles");
+    }
+
+    const requested = new Set(dto.roleIds);
+    const granted = await this.roles.requireRoles([...requested]);
+
+    await this.assertAdminRemains(id, granted);
+
+    await this.db.transaction(async (tx) => {
+      await tx.delete(userRoles).where(eq(userRoles.userId, id));
+
+      if (granted.length > 0) {
+        await tx.insert(userRoles).values(
+          granted.map((role) => ({
+            userId: id,
+            roleId: role.id,
+            // Provenance, not authorization: who granted it is what makes the assignment
+            // auditable after the fact.
+            assignedById: actorId,
+          })),
+        );
+      }
+    });
+
+    return { data: granted };
+  }
+
+  /**
+   * The rules a user's roles resolve to — the effective-permissions view.
+   *
+   * Computed by the same service the guards use, so what the console shows is what the
+   * API will actually enforce, placeholders and inverted rules included. A second
+   * implementation here would be a second answer to the same question.
+   */
+  async rulesOf(id: string): Promise<BaseResponse<AppRule[]>> {
+    const access = await this.abilities.forUser(id);
+    if (!access) {
+      throw new NotFoundException("User not found");
+    }
+    return { data: access.rules };
+  }
+
   /**
    * Marks the row deleted and drops every session it owns.
    *
    * Both statements share a transaction so a user can never end up flagged as
    * deleted while still holding a refresh token that would mint new access tokens
    * for them. The access token already in the browser stays syntactically valid
-   * until it expires — `RolesGuard` re-reads the row for exactly that reason.
+   * until it expires — `AbilityGuard` re-reads the row for exactly that reason.
    */
-  async softDelete(id: string): Promise<void> {
+  async softDelete(id: string, ability: AppAbility): Promise<void> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new NotFoundException("User not found");
+    }
+
+    this.assertAllowed(ability, "delete", existing);
+
+    // Deleting the last administrator leaves an install nobody can administer, and no
+    // endpoint can undo it. Checked before the write rather than repaired after.
+    await this.assertAdminRemains(id, []);
+
     const deleted = await this.db.transaction(async (tx) => {
       const [user] = await tx
         .update(users)
@@ -219,6 +376,76 @@ export class UsersService {
 
     if (!deleted) {
       throw new NotFoundException("User not found");
+    }
+  }
+
+  /**
+   * Re-checks a write against the row it will touch.
+   *
+   * The refusal carries the rule's own `reason` when it has one: an inverted rule exists
+   * to explain itself, and "insufficient permissions" throws that explanation away at the
+   * one moment it would have helped.
+   */
+  private assertAllowed(ability: AppAbility, action: "update" | "delete", user: User): void {
+    if (ability.can(action, asSubject("User", user))) return;
+
+    const rule = ability.relevantRuleFor(action, asSubject("User", user));
+    throw new ForbiddenException(rule?.reason ?? "Insufficient permissions for this user");
+  }
+
+  /** The role a new account gets when none was named. */
+  private async defaultRoles(): Promise<RoleRef[]> {
+    const rows = await this.db
+      .select({ id: roles.id, key: roles.key, name: roles.name })
+      .from(roles)
+      .where(eq(roles.key, DEFAULT_ROLE_KEY))
+      .limit(1);
+
+    // An install whose default role was somehow removed still creates accounts; they
+    // just start with nothing, which an operator can see and fix. Refusing to create
+    // users at all would be a worse failure than the one it reports.
+    return rows;
+  }
+
+  /**
+   * Refuses a change that would leave the install with no administrator.
+   *
+   * `nextRoles` is what the user would hold afterwards — an empty list for a delete.
+   * The check only runs when the user is *losing* a superuser role, so the extra query
+   * is paid on the one operation that could cause a lockout.
+   */
+  private async assertAdminRemains(userId: string, nextRoles: RoleRef[]): Promise<void> {
+    const superRoleIds = await this.roles.superRoleIds();
+    if (superRoleIds.length === 0) return;
+
+    const keepsSuper = nextRoles.some((role) => superRoleIds.includes(role.id));
+    if (keepsSuper) return;
+
+    const [held] = await this.db
+      .select({ total: count() })
+      .from(userRoles)
+      .where(and(eq(userRoles.userId, userId), inArray(userRoles.roleId, superRoleIds)))
+      .limit(1);
+
+    // Not an administrator to begin with, so this change cannot remove the last one.
+    if (!held || held.total === 0) return;
+
+    const [others] = await this.db
+      .select({ total: count() })
+      .from(userRoles)
+      .innerJoin(users, eq(users.id, userRoles.userId))
+      .where(
+        and(
+          inArray(userRoles.roleId, superRoleIds),
+          ne(userRoles.userId, userId),
+          isNull(users.deletedAt),
+        ),
+      );
+
+    if (!others || others.total === 0) {
+      throw new ConflictException(
+        `This is the last account with the "${SUPER_ROLE_KEY}" role — grant it to someone else first`,
+      );
     }
   }
 

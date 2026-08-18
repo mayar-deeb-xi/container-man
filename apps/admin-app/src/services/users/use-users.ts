@@ -20,7 +20,7 @@ export const usersListKey = (filters: UsersQueryFilters) => [...usersKey, "list"
 export async function listUsers(filters: UsersQueryFilters): Promise<UsersPage> {
   const { data } = await api.get<BaseResponse<User[]>>("/users", {
     // axios drops `undefined` params, so an unset filter never reaches the query
-    // string — which matters because the backend rejects `role=""`.
+    // string — which matters because the backend rejects `roleKey=""`.
     params: filters,
   });
 

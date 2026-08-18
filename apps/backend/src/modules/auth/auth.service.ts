@@ -18,6 +18,7 @@ import type { BaseResponse } from "../../lib/base.dto";
 import type { Database } from "../../lib/db/db.module";
 import type { LoginDto } from "./dto/login.dto";
 import { AppConfigService } from "../../config/app-config.service";
+import { AbilityService } from "../../lib/ability/ability.service";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { UsersService } from "../users/users.service";
 import { UserEntity } from "./entities/user.entity";
@@ -50,6 +51,7 @@ export class AuthService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly users: UsersService,
+    private readonly abilities: AbilityService,
     private readonly config: AppConfigService,
   ) {}
 
@@ -150,13 +152,23 @@ export class AuthService {
   /**
    * The access token already carries `sub`, but the row is re-read so a user
    * deleted mid-session stops authenticating before their token expires.
+   *
+   * It now also carries what the user may do. That is deliberately *not* in the token:
+   * the console builds its CASL ability from this response, so revoking a role shows up
+   * here on the next poll rather than fifteen minutes later — and the session query the
+   * UI already keeps fresh is what delivers it.
    */
   async me(userId: string): Promise<BaseResponse<UserEntity>> {
-    const user = await this.users.findById(userId);
-    if (!user) {
+    const [user, access] = await Promise.all([
+      this.users.findById(userId),
+      this.abilities.forUser(userId),
+    ]);
+
+    if (!user || !access) {
       throw new UnauthorizedException("User no longer exists");
     }
-    return { data: user };
+
+    return { data: { ...user, roles: access.roles, rules: access.rules } };
   }
 
   private async issueSession(user: User, meta: RequestMeta): Promise<AuthResult> {
@@ -166,7 +178,7 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       signAccessToken(
-        { userId: user.id, email: user.email, role: user.role, sessionId },
+        { userId: user.id, email: user.email, sessionId },
         this.config.accessSecret,
         this.config.accessTtl,
       ),

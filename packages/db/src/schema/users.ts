@@ -1,9 +1,8 @@
 import { relations, sql } from "drizzle-orm";
-import { pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { sessions } from "./sessions";
-
-export const userRole = pgEnum("user_role", ["admin", "user"]);
+import { userRoles } from "./user-roles";
 
 export const users = pgTable(
   "users",
@@ -13,7 +12,6 @@ export const users = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     name: text("name"),
-    role: userRole("role").notNull().default("user"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
@@ -46,9 +44,16 @@ export const users = pgTable(
  * `sessions` is imported from a module that imports this one back. The cycle is
  * safe because drizzle only invokes this callback when it builds the relational
  * schema, long after both modules have finished evaluating.
+ *
+ * There is no `role` column: what a user may do comes from `user_roles`, because
+ * one enum value per user cannot express "operator *and* auditor". The names have
+ * to be spelled out because `user_roles` points at this table twice — once for the
+ * holder, once for whoever granted the assignment.
  */
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
+  roles: many(userRoles, { relationName: "userRoleHolder" }),
+  rolesGranted: many(userRoles, { relationName: "userRoleGrantor" }),
 }));
 
 export type User = typeof users.$inferSelect;

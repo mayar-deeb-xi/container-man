@@ -1,7 +1,16 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
-import { userRole } from "@repo/db";
+import { MAX_ROLES_PER_USER } from "./set-user-roles.dto";
 
 export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 128;
@@ -32,9 +41,18 @@ export class CreateUserDto {
   @IsOptional()
   name?: string;
 
-  // `userRole.enumValues` rather than a hand-written list: the column and the
-  // validator can then never disagree about what roles exist.
-  @IsIn(userRole.enumValues)
+  /**
+   * Roles to grant the new account. Ids rather than keys: the console has just listed
+   * the roles to build its checkboxes, and an id cannot be ambiguous the way a key
+   * renamed in another tab can.
+   *
+   * Omitted means the default role — an account with no roles could sign in and do
+   * nothing, which is a reasonable state to *choose* but a poor one to arrive at by
+   * leaving a field out. Send an empty array to mean it.
+   */
+  @IsArray()
+  @IsUUID("4", { each: true })
+  @ArrayMaxSize(MAX_ROLES_PER_USER)
   @IsOptional()
-  role?: (typeof userRole.enumValues)[number];
+  roleIds?: string[];
 }

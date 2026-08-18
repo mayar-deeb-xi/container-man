@@ -22,13 +22,25 @@ import { siteName } from "@repo/white-label/admin-app";
 
 import type { SessionUser } from "~/services/auth/types";
 import { AppLogo } from "~/components/common/app-brand";
-import { isActiveHref, NAV_GROUPS } from "./nav-config";
+import { useAbility } from "~/components/providers/ability-provider";
+import { isActiveHref, NAV_GROUPS, navItemRequirement } from "./nav-config";
 import { NavUser } from "./nav-user";
 
 export function AppSidebar({ user }: { user: SessionUser }) {
   const t = useTranslations("Nav");
   const pathname = usePathname();
   const direction = useDirection();
+  const ability = useAbility();
+
+  // Filtered before the groups are drawn, not per item: a group whose every entry is
+  // hidden would otherwise render as a bare heading with nothing under it.
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      const requires = navItemRequirement(item);
+      return !requires || ability.can(requires.action, requires.subject);
+    }),
+  })).filter((group) => group.items.length > 0);
 
   return (
     // In a right-to-left locale the sidebar belongs on the right — `dir` alone
@@ -52,7 +64,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV_GROUPS.map((group, index) => (
+        {groups.map((group, index) => (
           <SidebarGroup key={group.labelKey}>
             <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
             <SidebarMenu>
@@ -72,7 +84,7 @@ export function AppSidebar({ user }: { user: SessionUser }) {
                 );
               })}
             </SidebarMenu>
-            {index < NAV_GROUPS.length - 1 && <SidebarSeparator />}
+            {index < groups.length - 1 && <SidebarSeparator />}
           </SidebarGroup>
         ))}
       </SidebarContent>
