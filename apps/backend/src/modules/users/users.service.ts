@@ -138,15 +138,25 @@ export class UsersService {
       }
     }
 
-    const patch: Partial<typeof users.$inferInsert> = {};
-    if (dto.email !== undefined) patch.email = dto.email;
-    if (dto.name !== undefined) patch.name = dto.name;
-    if (dto.role !== undefined) patch.role = dto.role;
-    if (dto.password !== undefined) patch.passwordHash = await hashPassword(dto.password);
+    // `password` is the only field that isn't a column — it needs hashing and a
+    // different name — so it is peeled off and the rest ride along as they are.
+    // Drizzle's `mapUpdateSet` drops `undefined` values before building the SQL,
+    // which is what makes an absent key mean "leave this column alone".
+    const { password, ...columns } = dto;
+    const patch: Partial<typeof users.$inferInsert> = {
+      ...columns,
+      ...(password !== undefined ? { passwordHash: await hashPassword(password) } : {}),
+    };
 
+    // Tested by value, not by key count: the DTO is a class, and under
+    // `target: ES2022` its declared fields exist on every instance, so a field the
+    // client never sent is still an own key holding `undefined`.
+    //
     // An empty PATCH is not an error, but writing it would bump `updated_at` and
-    // make an audit trail claim a change that never happened.
-    if (Object.keys(patch).length === 0) {
+    // make an audit trail claim a change that never happened — and Drizzle throws
+    // "No values to set" when every value is undefined, so this is the guard for
+    // that too.
+    if (Object.values(patch).every((value) => value === undefined)) {
       return { data: existing };
     }
 
