@@ -10,7 +10,6 @@ import type { Database } from "../../lib/db/db.module";
 import type { CreateUserDto } from "./dto/create-user.dto";
 import type { ListUsersDto } from "./dto/list-users.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
-import { baseResponse, paginated } from "../../lib/base.dto";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { UserEntity } from "./entities/user.entity";
 
@@ -86,7 +85,7 @@ export class UsersService {
       this.db.select({ total: count() }).from(users).where(where),
     ]);
 
-    return paginated(rows.map(UsersService.toEntity), { skip, take, total: totals?.total ?? 0 });
+    return { data: rows, pagination: { skip, take, total: totals?.total ?? 0 } };
   }
 
   async findOne(id: string): Promise<BaseResponse<UserEntity>> {
@@ -94,7 +93,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    return baseResponse(UsersService.toEntity(user));
+    return { data: user };
   }
 
   async create(dto: CreateUserDto): Promise<BaseResponse<UserEntity>> {
@@ -117,7 +116,7 @@ export class UsersService {
         })
         .returning();
 
-      return baseResponse(UsersService.toEntity(user!));
+      return { data: user! };
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -148,7 +147,7 @@ export class UsersService {
     // An empty PATCH is not an error, but writing it would bump `updated_at` and
     // make an audit trail claim a change that never happened.
     if (Object.keys(patch).length === 0) {
-      return baseResponse(UsersService.toEntity(existing));
+      return { data: existing };
     }
 
     try {
@@ -171,7 +170,7 @@ export class UsersService {
         await this.revokeSessions(id);
       }
 
-      return baseResponse(UsersService.toEntity(user));
+      return { data: user };
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -218,24 +217,5 @@ export class UsersService {
       .update(sessions)
       .set({ revokedAt: new Date() })
       .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
-  }
-
-  /**
-   * Row to payload — which is also where the password hash is dropped.
-   *
-   * Typed as the entity rather than as a separate interface: the entity already
-   * declares which columns are exposed, so widening it widens what these methods
-   * are allowed to return, and the two can't drift into disagreeing about the
-   * payload the way two hand-kept copies would.
-   */
-  static toEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
   }
 }

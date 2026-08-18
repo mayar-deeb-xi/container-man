@@ -12,8 +12,10 @@ import type { PublicUser, UserRole } from "@repo/auth";
  * PublicUser` is what keeps the copy honest: widen the shared interface and this
  * file stops compiling until the new field is deliberately exposed or omitted.
  *
- * Only `@Expose`d fields reach the wire, so this is a second line of defense
- * behind `AuthService.toEntity()` rather than a replacement for it.
+ * Only `@Expose`d fields reach the wire, and the service hands the interceptor a
+ * whole `users` row — so this list is the only thing standing between
+ * `passwordHash` and the response. Adding a column to the table is safe by
+ * default; exposing it here is the deliberate act.
  */
 @Exclude()
 export class UserEntity implements PublicUser {

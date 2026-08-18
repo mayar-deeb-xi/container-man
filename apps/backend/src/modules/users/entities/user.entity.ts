@@ -12,8 +12,14 @@ import type { UserRole } from "@repo/auth";
  * for one would silently appear in the other. Spelling both out costs four lines
  * and makes each module's wire format readable in one place.
  *
- * `deletedAt` is deliberately absent: these endpoints only ever return live rows,
- * so a field that is always null would just invite a client to branch on it.
+ * Only `@Expose`d fields reach the wire, and the service hands the interceptor a
+ * whole `users` row — so this list is the only thing standing between
+ * `passwordHash` and the response. Adding a column to the table is safe by
+ * default; exposing it here is the deliberate act.
+ *
+ * `deletedAt` is absent for that reason and one more: these endpoints only ever
+ * return live rows, so a field that is always null would just invite a client to
+ * branch on it.
  */
 @Exclude()
 export class UserEntity {

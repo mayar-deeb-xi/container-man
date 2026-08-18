@@ -19,14 +19,6 @@ export interface BaseResponse<T> {
   pagination?: Pagination;
 }
 
-export function baseResponse<T>(data: T): BaseResponse<T> {
-  return { data };
-}
-
-export function paginated<T>(data: T[], pagination: Pagination): BaseResponse<T[]> {
-  return { data, pagination };
-}
-
 /**
  * Builds the runtime class that `@SerializeOptions({ type })` needs.
  *
@@ -40,6 +32,13 @@ export function paginated<T>(data: T[], pagination: Pagination): BaseResponse<T[
  * `Exclude` drops every key, the two `Expose` calls let `data` and `pagination`
  * back in, and `Type` recurses into the payload class so *its* decorators decide
  * which columns survive.
+ *
+ * This is load-bearing, not decoration. Services return database rows straight
+ * into `data`, so the `@Expose` allowlist on the payload class is the *only*
+ * thing keeping `passwordHash` and `deletedAt` off the wire. A route that returns
+ * a row without a `@SerializeOptions({ type })` naming one of these envelopes
+ * leaks the whole record — declare it on the controller, as both current ones do,
+ * so a route added later inherits it.
  *
  * Hoist the result to a module-level const — calling this inline in a decorator
  * mints a fresh class per call site for no benefit.

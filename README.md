@@ -144,6 +144,16 @@ acting as an admin until it expired.
 envelope so a client can page by echoing what it was last given. `search` matches
 email and name case-insensitively; `role` filters. `take` is capped at 100.
 
+**Serialization is the boundary.** Services return database rows straight into the
+`BaseResponse` envelope — no hand-written mapper in between — and the `@Expose`
+allowlist on each module's `UserEntity` is what decides which columns survive.
+`ClassSerializerInterceptor` (registered in `main.ts`) runs it against the class
+named by the controller's `@SerializeOptions({ type: BaseResponseDTO(UserEntity) })`.
+Adding a column to the table is therefore safe by default; exposing it is the
+deliberate act. The corollary: a controller that returns a row _without_ that
+decorator ships the whole record, `password_hash` included — so declare it on the
+controller, not per route, and a route added later inherits it.
+
 **Deletes are soft.** `DELETE` stamps `users.deleted_at` and revokes every session
 the user holds, in one transaction — a user must never end up flagged as deleted
 while still holding a refresh token that mints new access tokens. Every read path
