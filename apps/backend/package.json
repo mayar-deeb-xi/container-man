@@ -6,6 +6,7 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
+    "vercel-build": "pnpm -w exec turbo run build --filter=@repo/backend^...",
     "check-types": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf dist .turbo"
