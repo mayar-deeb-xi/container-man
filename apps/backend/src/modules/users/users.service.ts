@@ -5,7 +5,19 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, count, desc, eq, exists, ilike, inArray, isNull, ne, or } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  getTableColumns,
+  ilike,
+  inArray,
+  isNull,
+  ne,
+  or,
+} from "drizzle-orm";
 
 import type { AppAbility, AppRule } from "@repo/access";
 import type { User } from "@repo/db";
@@ -21,7 +33,9 @@ import type { ListUsersDto } from "./dto/list-users.dto";
 import type { SetUserRolesDto } from "./dto/set-user-roles.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UserEntity } from "./entities/user.entity";
+import { abilityWhere } from "../../lib/ability/ability-where";
 import { AbilityService } from "../../lib/ability/ability.service";
+import { assertFieldsAllowed, touchedFields } from "../../lib/ability/field-access";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { escapeLike, isUniqueViolation } from "../../lib/sql.utils";
 import { RolesService } from "../roles/roles.service";
@@ -60,14 +74,13 @@ export class UsersService {
   /**
    * A page of users, filtered by whatever the caller's own `read User` rules allow.
    *
-   * `ability` is applied per row rather than compiled into the SQL. Conditions are
-   * MongoDB-style queries, and translating them into Drizzle predicates would be a
-   * second query compiler to keep correct — so the rows are fetched and then tested with
-   * the same evaluator the guards use. The trade-off is deliberate and worth stating:
-   * `total` counts what the SQL matched, so a caller whose `read User` is conditional
-   * sees an over-count and possibly a short page. Showing a row a rule forbids would be
-   * the far worse failure, and refusing the endpoint outright would break the ordinary
-   * unconditional case that every operator uses.
+   * The conditions are pushed into the query where they can be, and every row is still
+   * tested with the same evaluator the guards use — that second pass is what decides, and
+   * `abilityWhere` is only ever permitted to under-restrict, so the two cannot disagree in
+   * the direction that would show a row a rule forbids. `total` therefore counts what the
+   * caller can see, except where a rule does not translate (a deny, or an operator with no
+   * faithful SQL equivalent), which leaves the over-count this list used to have in every
+   * conditional case.
    */
   async list(query: ListUsersDto, ability: AppAbility): Promise<BaseResponse<UserEntity[]>> {
     const { skip, take, search, roleKey } = query;
@@ -75,6 +88,9 @@ export class UsersService {
     const term = search ? `%${escapeLike(search)}%` : undefined;
     const where = and(
       isNull(users.deletedAt),
+      // The caller's `read User` conditions, in SQL where they translate — so `total` and the
+      // page agree with what the row filter below leaves behind. See `abilityWhere`.
+      abilityWhere(ability, "read", "User", getTableColumns(users)),
       term ? or(ilike(users.email, term), ilike(users.name, term)) : undefined,
       // `exists` rather than a join: a user with three roles must still be one row, and
       // joining then de-duplicating would make `take` mean something other than "this
@@ -198,6 +214,12 @@ export class UsersService {
     // which is the most dangerous kind of ignored.
     this.assertAllowed(ability, "update", existing);
 
+    // And which columns of it. A rule narrowed to `["name"]` passes the check above —
+    // CASL answers a fieldless question about the row, not about the body — so the body's
+    // own keys have to be put to it separately. `password` is one of them: being allowed
+    // to correct someone's display name is not being allowed to take over their account.
+    assertFieldsAllowed(ability, asSubject("User", existing), touchedFields(dto));
+
     if (dto.email && dto.email !== existing.email) {
       const clash = await this.findByEmail(dto.email);
       if (clash) {
@@ -288,6 +310,13 @@ export class UsersService {
     }
 
     this.assertAllowed(ability, "update", user);
+
+    // Roles are a field of the user for authorization purposes, even though they are
+    // replaced through their own endpoint. It is the field that hands out privilege, so a
+    // rule that grants `update User` for the ordinary account fields can withhold this
+    // one and mean it: support may fix a typo in an email without being able to promote
+    // the account to admin.
+    assertFieldsAllowed(ability, asSubject("User", user), ["roles"]);
 
     // Editing your own roles is a one-way door: `update User` is itself a permission,
     // so the moment it lands you may no longer be able to reach this endpoint to undo

@@ -14,6 +14,7 @@ PostgreSQL + Drizzle and cookie-based JWT auth.
 | Data     | axios + TanStack React Query                                    |
 | Backend  | NestJS 11, class-validator DTOs                                 |
 | Database | PostgreSQL 17 + Drizzle ORM                                     |
+| Cache    | Redis 8 — optional; with no `REDIS_URL` the app runs without it |
 | Auth     | JWT access + refresh tokens in httpOnly cookies, with rotation  |
 | Access   | CASL abilities from database-backed roles and permissions       |
 | Domain   | Shipping containers: ISO 6346 identity, CSC plate, survey dates |
@@ -27,6 +28,7 @@ apps/
 packages/
   access/        CASL vocabulary, rule format, ability builder, system roles
   auth/          JWT signing/verification, password hashing, cookie contract
+  cache/         Optional Redis client, connection lifecycle, key namespacing
   db/            Drizzle schema, client, migrations, seed
   shipping/      Container vocabulary, ISO 6346 check digit, CSC plate arithmetic
   ui/            shadcn/ui components (Tailwind v4) — no stylesheet of its own
@@ -45,7 +47,7 @@ modules/auth/, modules/users/   controller + service + module, with dto/ and ent
 modules/roles/, modules/permissions/, modules/containers/
 guards/                         JwtAccessGuard, JwtRefreshGuard, AbilityGuard
 decorators/                     CurrentUser, RequireAbility, CurrentAbility
-lib/                            response envelope, pagination query, Drizzle and ability providers
+lib/                            response envelope, pagination query, Drizzle, ability and Redis providers
 config/                         env validation and the typed AppConfigService
 ```
 
@@ -76,7 +78,7 @@ never _how_ anything is worded — wording is translated, so it lives in each ap
 ```bash
 pnpm install
 cp .env.example .env      # a single .env at the root serves every workspace
-pnpm dev:db               # start Postgres in Docker
+pnpm dev:db               # start Postgres (and Redis) in Docker
 pnpm db:migrate           # apply migrations
 pnpm db:seed              # catalog + system roles + admin (+ demo data outside prod)
 pnpm dev                  # admin-app on :3000, backend on :3001
@@ -198,16 +200,56 @@ simply grants nothing.
 
 **A stored rule is a CASL rule.** `role_permissions` carries `conditions` (a
 MongoDB-style query matched against the record), `fields`, `inverted` and `reason`
-alongside the pair — so "update the containers you own, name and description only"
-is one row, not a special case in code. Conditions may reference the signed-in user
-through `${user.id}` and `${user.email}`, resolved per request; the placeholder list
-is closed and writes are validated against it, because a rule whose placeholder
-resolves to nothing would grant nothing while looking granted.
+alongside the pair — so "set the status of the containers assigned to you, and nothing
+else about them" is one row, not a special case in code. Conditions may reference the
+signed-in user through `${user.id}` and `${user.email}`, resolved per request; the
+placeholder list is closed and writes are validated against it, because a rule whose
+placeholder resolves to nothing would grant nothing while looking granted. The operator
+allowlist is enforced for the same reason, and it is exactly the set `createAppAbility`
+can evaluate — which is why `packages/access` registers MongoDB's `$and`, `$or`, `$nor`
+and `$not` with the matcher. CASL's default omits them, and an unsupported operator does
+not raise: it parses as a comparison against a field of that name and matches nothing.
+
+**`conditions` says which records; `fields` says which columns.** A condition is matched
+against the record, so `{"assignedToId": "${user.id}"}` means "the containers assigned to
+you" — and a rule with _no_ condition covers every row, which matters when roles are
+combined: allows are unioned, so a single unconditional grant in any role a user holds
+widens all of them. Narrowing back down is what `inverted` is for. `fields` is enforced on
+**writes only**. A PATCH names the columns it touches, so refusing the ones a rule does not
+cover is exact and the refusal says which; filtering columns out of a _response_ would mean
+rendering tables with holes in them, and "which records may be read" is already what
+`conditions` expresses. Because no other action is field-checked, the API refuses to store
+`fields` on one — `manage` included, since it covers reads and deletes too. Two field names
+are not body keys at all: `User.roles` and `Role.permissions` name the endpoints that hand
+out privilege, so `update Role` limited to `["name", "description"]` is "may tidy up the
+role list, may not change what anybody can do".
 
 **Nothing is cached.** `AbilityService` reads roles and rules on every guarded
 request — two indexed queries — and builds the ability from them. That is the point:
 an operator who revokes a role expects it to be revoked, and every copy of the rules
 (a JWT claim, a process-local map) is a window in which it is not.
+
+**An overlap is resolved by order, so denies are sorted last.** CASL takes the last
+matching rule — not the inverted one, whatever is intuitive. A single role cannot hold both
+halves of a contradiction (the composite primary key forbids it), but two roles one user
+holds can, so `AbilityService` orders inverted rules to the end as it resolves them. A deny
+then beats every allow it overlaps regardless of which role contributed it, and "everyone
+may update containers, except nobody touches a retired one" is a broad allow plus one
+inverted rule.
+
+**List queries push conditions into SQL and are still filtered row by row.**
+`abilityWhere` compiles what it can into a `WHERE` clause under a single invariant: the
+predicate may admit rows the rules forbid, but must never exclude one they allow. A second
+evaluator will differ from `@ucast/mongo2js` somewhere — three-valued logic over `NULL`,
+JS coercing `null` to `0` in a comparison, regex dialects — and allowed to differ in only
+that direction, the difference costs I/O rather than leaking a row, because the ability is
+applied to every row afterwards and has the last word. Anything untranslatable therefore
+widens: a clause drops out of an `AND`, a branch discards its whole `OR`, a rule abandons
+the push-down, and a value whose type the column would reject is left in memory. What this
+buys is a truthful list — `pagination.total` counts what the caller can see and a page
+comes back full, where before `LIMIT` was applied to rows the filter then removed, so a
+conditional reader got an over-count above a short page and could be handed an empty first
+page. It over-counts only where a rule does not translate.
 
 **Endpoints** — `GET /roles`, `GET /roles/:id`, `POST /roles`, `PATCH /roles/:id`,
 `PUT /roles/:id/permissions`, `DELETE /roles/:id`, and `GET /permissions` for the
@@ -225,7 +267,10 @@ Several requirements are ANDed: `PUT /users/:id/roles` needs `update User` **and
 `update Role`, since handing out roles is how privilege is granted — without the
 second, someone who may only rename accounts could promote a colleague. A route-level
 check cannot test conditions (there is no record yet), so where ownership matters the
-handler re-checks with `@CurrentAbility()` against the row it loaded.
+handler re-checks with `@CurrentAbility()` against the row it loaded — and where a rule may
+be narrowed to certain columns, `assertFieldsAllowed` puts the body's own keys to it. Both
+are per-record on purpose: a rule's conditions and its fields have to be evaluated against
+the same object, or either could be satisfied by the wrong one.
 
 **What the API refuses, and why.** Each of these is a door that cannot be reopened
 from the other side:
@@ -254,16 +299,42 @@ assigns roles to one person and shows, beside it, the effective rules those role
 to — fetched from the API rather than unioned in the browser, so what is displayed is what
 will be enforced.
 
-**Conditions, field limits and denials are storage-level for now.** All three are
-supported end to end — schema, validation, guards, and the effective-permissions view —
-but the console's editor for them is switched off behind `SHOW_RULE_DETAILS` in
-`permission-matrix.tsx`: deciding whether a grant should be narrowed by a Mongo-style
-query is more than the grid should ask of an operator. Write them through
-`PUT /roles/:id/permissions` and the console will not disturb them — the grid saves from
-drafts seeded by what the role already grants, so an untouched rule round-trips exactly.
-A rule the grid cannot edit is still marked in it: a denial reads as **Deny** under the
+**Narrowing a grant** happens under the grid, in **Rule details**: one panel per granted
+cell, with the condition as JSON, the field limit, the denial switch and its reason. The
+grid stays the answer to "what can this role do?" and the panel is where a yes becomes a
+qualified yes — so the whole section is **folded by default**, the way an "advanced" block
+is. Ticking a box is the errand most people arrive with, and a Mongo-style query is not
+something to put in their way.
+
+Folding hides nothing, though. The closed header counts the rules that are narrowed, and a
+save that fails on a condition unfolds the section _and_ the panel holding it — "some rules
+could not be saved" is not actionable while the reason is out of sight. Which panels are
+open is state in the component rather than each `Collapsible`'s own, because the content
+unmounts when the section closes: uncontrolled panels would quietly lose your place every
+time it folded. Two more things are deliberate:
+
+- **The field limit is a set of chips, not a text box**, drawn from `WRITABLE_FIELDS` for
+  that subject. A typed field name is the one mistake that cannot be seen afterwards:
+  `"despot"` does not restrict a rule to the depot, it restricts it to a field no request
+  will ever name — which revokes the grant while looking like a narrowing. The API rejects
+  it too; the console simply never offers it.
+- **It only appears on `update` rules.** No other action is field-checked, so on a `read`
+  or `create` cell the control is absent rather than disabled — and `manage` is excluded
+  for the same reason, since it covers the actions that would ignore it.
+
+A cell also carries its own marker in the grid: a denial reads as **Deny** under the
 checkbox (it is a rule, so the box _is_ ticked, and an unlabelled tick would read as
 "allowed"), and a rule narrowed by conditions or fields carries a dot.
+
+**The console greys out what the API would refuse.** `useFieldAccess(subject, record)`
+answers per field, against the record being edited, so a rule limited to
+`["status", "depot"]` leaves those two inputs live and disables the other fifteen with one
+line saying why — rather than letting someone fill in a plate weight and meet a 403 on
+save. It reaches the two non-column fields as well: without `roles` the assignment card on
+`/users/[id]` explains itself instead of saving, and without `permissions` the matrix
+renders read-only. On a create form everything is writable, because a create has no record
+for a condition to match and is not field-checked. None of it is a boundary — every one of
+those writes is checked again by the API.
 
 `/auth/me` returns the user's roles **and** their resolved rules, and
 `AbilityProvider` builds the client ability from them. `<Can I="update" a="Role">`
@@ -372,7 +443,9 @@ responsible for a box — deliberately not the industry's "owner", which is the 
 company encoded in the number's owner code. A role granted `update Container` with
 conditions `{ "assignedToId": "${user.id}" }` can edit only its own boxes, enforced by the
 service against the row it loaded and reflected in the console, where the row's actions
-menu appears only on the boxes that rule allows.
+menu appears only on the boxes that rule allows. Adding `fields: ["status", "depot"]` to the
+same rule narrows it again — a clerk who moves boxes around the yard without re-plating them
+— and a PATCH touching anything else is refused by the column it named.
 
 That last part has a requirement worth stating: **any column a condition may reference has
 to be exposed by the API.** `assignedToId` is sent alongside the resolved `assignedTo`
@@ -491,9 +564,42 @@ src/global.d.ts                      makes message keys type-checked
   strings (see `login/_lib/schemas.ts`) so validation messages follow the locale
   without the schema knowing anything about i18n.
 
+## Cache
+
+Redis is **optional**, and the app is written so that it stays optional. `packages/cache`
+owns the client — one memoized connection, a bounded reconnect strategy, and every key
+namespaced through `cacheKey()` so several environments can share one instance.
+`RedisService` (`apps/backend/src/lib/redis/`) is the only thing the backend talks to;
+`RedisModule` is global, so any feature module can inject it.
+
+With no `REDIS_URL` there is no client at all. When one is configured but unreachable,
+the service logs a single warning at boot and keeps serving: reads report a miss, writes
+are dropped, and `wrap()` just calls its loader. A cache outage degrades throughput,
+never correctness — which is the property that lets a cached read be added to a hot
+path without adding a new way for it to fail.
+
+```ts
+constructor(private readonly cache: RedisService) {}
+
+// read-through; with no cache this is exactly `loadContainer(id)`
+const container = await this.cache.wrap(this.cache.key("containers", id), 60, () =>
+  this.loadContainer(id),
+);
+
+// invalidate one entry, or a whole group, after a write
+await this.cache.del(this.cache.key("containers", id));
+await this.cache.delByPattern(`${this.cache.key("containers")}:*`);
+```
+
+Nothing is cached yet — the service is wired up and waiting for the first call site.
+
 ## Environment
 
 All variables live in one root `.env` (see `.env.example`). Both apps validate at
 boot and refuse to start on a bad value — the backend with class-validator
 (`apps/backend/src/config/env.ts`), the admin app with `@t3-oss/env-nextjs`
 (`apps/admin-app/src/env.ts`).
+
+`REDIS_URL` is the one variable whose absence is a valid configuration rather than a
+mistake, so it is optional in the backend schema and in `packages/cache` — but a malformed
+value still fails at boot rather than quietly leaving the cache off.

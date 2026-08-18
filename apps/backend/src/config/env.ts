@@ -34,6 +34,19 @@ export class EnvironmentVariables {
   @IsNotEmpty()
   DATABASE_URL!: string;
 
+  /**
+   * Optional: unset means the app runs with no cache at all. Declared here anyway so
+   * that a typo'd URL fails at boot rather than silently disabling caching.
+   */
+  @IsOptional()
+  @Matches(/^rediss?:\/\//, { message: "REDIS_URL must start with redis:// or rediss://" })
+  REDIS_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  REDIS_KEY_PREFIX?: string;
+
   // 32 chars is the floor for an HS256 secret to actually carry 256 bits.
   @IsString()
   @MinLength(32, { message: "JWT_ACCESS_SECRET must be at least 32 characters" })

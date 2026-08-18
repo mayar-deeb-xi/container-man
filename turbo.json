@@ -4,6 +4,8 @@
   "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_API_URL"],
   "globalPassThroughEnv": [
     "DATABASE_URL",
+    "REDIS_URL",
+    "REDIS_KEY_PREFIX",
     "PORT",
     "JWT_ACCESS_SECRET",
     "JWT_REFRESH_SECRET",

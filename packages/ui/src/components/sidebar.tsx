@@ -620,7 +620,9 @@ function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
       data-slot="sidebar-menu-sub"
       data-sidebar="menu-sub"
       className={cn(
-        "border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l px-2.5 py-0.5",
+        // `border-s` rather than shadcn's `border-l`: the guide line down the nested
+        // items sits on the side the list indents from, which is the right in Arabic.
+        "border-sidebar-border mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-s px-2.5 py-0.5",
         "group-data-[collapsible=icon]:hidden",
         className,
       )}

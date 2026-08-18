@@ -19,7 +19,8 @@ import { Checkbox } from "@repo/ui/components/checkbox";
 import { Label } from "@repo/ui/components/label";
 import { Skeleton } from "@repo/ui/components/skeleton";
 
-import { useCan } from "~/components/providers/ability-provider";
+import type { User } from "~/services/users/types";
+import { useCan, useFieldAccess } from "~/components/providers/ability-provider";
 import { getApiErrorMessage } from "~/lib/axios";
 import { useRoles } from "~/services/roles/use-roles";
 import { useSetUserRoles, useUserRoles } from "~/services/users/use-user-roles";
@@ -34,21 +35,33 @@ const ROLE_LIMIT = 100;
  * and their abilities are the union — so the control has to make "two of these" as
  * natural as one. Saving replaces the whole set in a single request.
  */
-export function UserRolesCard({ userId, isSelf }: { userId: string; isSelf: boolean }) {
+export function UserRolesCard({ user, isSelf }: { user: User; isSelf: boolean }) {
   const t = useTranslations("Users.access.roles");
   const tc = useTranslations("Common");
+
+  const userId = user.id;
 
   const assigned = useUserRoles(userId);
   const available = useRoles(useMemo(() => ({ skip: 0, take: ROLE_LIMIT }), []));
   const setRoles = useSetUserRoles();
 
-  // Both permissions, because that is what the endpoint requires: handing out roles is how
-  // privilege is granted, so it takes the right to administer accounts *and* the right to
-  // administer what a role means. Read into two constants rather than `&&`-ed inline —
-  // short-circuiting would skip a hook call and change the hook order between renders.
-  const canUpdateUsers = useCan("update", "User");
+  /**
+   * Whether this card may save.
+   *
+   * `roles` is a field of the user as far as authorization goes — the endpoint that replaces
+   * them is separate only because it takes a whole set — so asking `useFieldAccess` about it
+   * covers three things at once: that the caller may update users at all, that any conditions
+   * on the rule match *this* person, and that the rule has not been narrowed to the ordinary
+   * account fields. A support role that may fix a typo in an email but not promote anybody is
+   * exactly that last case.
+   *
+   * `update Role` is separate and still required: handing out a role takes the right to
+   * administer what a role means, which is what stops an account administrator promoting a
+   * colleague. The API requires both, and so does this.
+   */
+  const canWriteRoles = useFieldAccess("User", user)("roles");
   const canUpdateRoles = useCan("update", "Role");
-  const canAssign = canUpdateUsers && canUpdateRoles && !isSelf;
+  const canAssign = canWriteRoles && canUpdateRoles && !isSelf;
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -93,7 +106,9 @@ export function UserRolesCard({ userId, isSelf }: { userId: string; isSelf: bool
     <Card>
       <CardHeader>
         <CardTitle>{t("title")}</CardTitle>
-        <CardDescription>{isSelf ? t("selfNotice") : t("description")}</CardDescription>
+        <CardDescription>
+          {isSelf ? t("selfNotice") : canAssign ? t("description") : t("restrictedNotice")}
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">

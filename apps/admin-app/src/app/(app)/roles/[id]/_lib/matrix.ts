@@ -1,5 +1,5 @@
-import type { AppAction, AppSubject } from "@repo/access";
-import { permissionKey } from "@repo/access";
+import type { AppAction, AppResourceSubject, AppSubject } from "@repo/access";
+import { FIELD_SCOPED_ACTION, permissionKey, WRITABLE_FIELDS } from "@repo/access";
 
 import type { Permission } from "~/services/permissions/types";
 import type { RoleRule, RulePayload } from "~/services/roles/types";
@@ -80,6 +80,45 @@ export function draftFor(drafts: DraftMap, action: AppAction, subject: AppSubjec
   return drafts[permissionKey(action, subject)] ?? emptyDraft;
 }
 
+/**
+ * Whether a cell can carry a field limit at all.
+ *
+ * Only `update` is field-checked, and only a real subject has fields to name — so for every
+ * other cell the control is not disabled, it is absent. Offering it would advertise a
+ * restriction the API refuses to store, and before that refusal existed it would have
+ * advertised one nothing enforced.
+ */
+export function acceptsFields(
+  action: AppAction,
+  subject: AppSubject,
+): subject is AppResourceSubject {
+  return action === FIELD_SCOPED_ACTION && subject !== "all";
+}
+
+/** The fields a draft names, as a list — the stored form is text, the UI wants the set. */
+export function selectedFields(draft: RuleDraft): string[] {
+  return draft.fieldsText
+    .split(",")
+    .map((field) => field.trim())
+    .filter(Boolean);
+}
+
+/**
+ * The draft's field text with one field added or removed.
+ *
+ * Kept in the registry's order rather than the order they were clicked: the list is read
+ * back as a set, and a stored order that depends on clicking would make two identical
+ * restrictions compare as different in `isDirty`.
+ */
+export function toggleField(draft: RuleDraft, subject: AppResourceSubject, field: string): string {
+  const current = new Set(selectedFields(draft));
+
+  if (current.has(field)) current.delete(field);
+  else current.add(field);
+
+  return WRITABLE_FIELDS[subject].filter((name) => current.has(name)).join(", ");
+}
+
 /** True when a draft carries anything beyond the bare grant — what the UI badges. */
 export function isDetailed(draft: RuleDraft): boolean {
   return Boolean(draft.conditionsText.trim() || draft.fieldsText.trim() || draft.inverted);
@@ -129,10 +168,10 @@ export function buildRules(
       }
     }
 
-    const fields = draft.fieldsText
-      .split(",")
-      .map((field) => field.trim())
-      .filter(Boolean);
+    // Dropped outright on an action that is not field-checked. A rule written through the
+    // API before that was refused would otherwise be sent back as-is and rejected, leaving
+    // the operator with a 400 about a control the editor never showed them.
+    const fields = acceptsFields(entry.action, entry.subject) ? selectedFields(draft) : [];
 
     rules.push({
       action: entry.action,

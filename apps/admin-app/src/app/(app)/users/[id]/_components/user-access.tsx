@@ -72,7 +72,9 @@ export function UserAccess({ userId, isSelf }: { userId: string; isSelf: boolean
         </div>
       </div>
 
-      <UserRolesCard userId={userId} isSelf={isSelf} />
+      {/* The row, not just the id — the roles card asks whether the caller may write this
+          person's roles, and a conditional rule can only be answered against the record. */}
+      <UserRolesCard user={person} isSelf={isSelf} />
       <EffectivePermissionsCard userId={userId} />
     </>
   );

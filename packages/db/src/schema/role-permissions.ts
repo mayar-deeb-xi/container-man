@@ -40,12 +40,24 @@ export const rolePermissions = pgTable(
      * same rule serves every user who holds the role.
      */
     conditions: jsonb("conditions").$type<Record<string, unknown>>(),
-    /** Narrows the rule to these columns; null grants the whole subject. */
+    /**
+     * Narrows the rule to these columns; null grants the whole subject.
+     *
+     * Write-side only, and the API refuses to store it on any action but `update` — see
+     * `FIELD_SCOPED_ACTION` in `@repo/access`. Two entries are not columns at all:
+     * `User.roles` and `Role.permissions` name the endpoints that hand out privilege, so a
+     * role can grant "may edit the account, may not change what it can do".
+     */
     fields: text("fields").array(),
     /**
-     * A deny rule. CASL gives inverted rules precedence over any allow they
-     * overlap, which is what makes "everything except the admins" expressible as
-     * two rows rather than an enumeration.
+     * A deny rule, and the reason "everything except the admins" is two rows rather than
+     * an enumeration.
+     *
+     * Precedence over an overlapping allow is not something CASL does by itself — it
+     * resolves overlaps by rule order — so `AbilityService.forUser` sorts these last when
+     * it resolves a user's roles. Without that, a user holding one role that grants an
+     * action and another that denies it would get whichever the join happened to return
+     * last.
      */
     inverted: boolean("inverted").notNull().default(false),
     /** Surfaced to the user when an inverted rule is what refused them. */

@@ -1,6 +1,8 @@
 import { Transform } from "class-transformer";
 import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
+import type { WritableKeys } from "@repo/access";
+
 import { NAME_MAX, PASSWORD_MAX, PASSWORD_MIN } from "./create-user.dto";
 
 /**
@@ -36,3 +38,12 @@ export class UpdateUserDto {
   @IsOptional()
   name?: string | null;
 }
+
+/**
+ * Every key of this PATCH is nameable in a rule's `fields`, checked at compile time.
+ *
+ * A key missing from `WRITABLE_FIELDS.User` would be a column no rule can mention:
+ * a role narrowed to every *other* field would leave this one writable, and nothing would
+ * say so. Adding a field here without registering it does not build.
+ */
+export type UserPatchField = WritableKeys<"User", keyof UpdateUserDto>;

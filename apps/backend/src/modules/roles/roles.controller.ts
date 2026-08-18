@@ -15,7 +15,10 @@ import {
   UseGuards,
 } from "@nestjs/common";
 
+import type { AppAbility } from "@repo/access";
+
 import type { BaseResponse } from "../../lib/base.dto";
+import { CurrentAbility } from "../../decorators/current-ability.decorator";
 import { RequireAbility } from "../../decorators/require-ability.decorator";
 import { AbilityGuard } from "../../guards/ability.guard";
 import { JwtAccessGuard } from "../../guards/jwt-access.guard";
@@ -75,8 +78,9 @@ export class RolesController {
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateRoleDto,
+    @CurrentAbility() ability: AppAbility,
   ): Promise<BaseResponse<RoleDetailEntity>> {
-    return this.roles.update(id, dto);
+    return this.roles.update(id, dto, ability);
   }
 
   /**
@@ -90,8 +94,9 @@ export class RolesController {
   async setPermissions(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: SetRolePermissionsDto,
+    @CurrentAbility() ability: AppAbility,
   ): Promise<BaseResponse<RoleDetailEntity>> {
-    return this.roles.setPermissions(id, dto);
+    return this.roles.setPermissions(id, dto, ability);
   }
 
   /**

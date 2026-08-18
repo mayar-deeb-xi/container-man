@@ -8,6 +8,7 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@repo/ui/components/breadcrumb";
 import { Separator } from "@repo/ui/components/separator";
 import { SidebarTrigger } from "@repo/ui/components/sidebar";
@@ -28,10 +29,22 @@ export function AppHeader() {
 
       <Breadcrumb className="flex-1">
         <BreadcrumbList>
+          {/* The section is a heading, not a page, so it names where the reader is
+              without pretending to be somewhere they can go. Dropped on narrow
+              screens, where the page name is the part worth the room. */}
+          {current?.section && (
+            <>
+              <BreadcrumbItem className="hidden sm:block">
+                {t(current.section.labelKey)}
+              </BreadcrumbItem>
+              {/* The default separator is a chevron, which points the wrong way in Arabic. */}
+              <BreadcrumbSeparator className="hidden sm:block rtl:[&>svg]:-scale-x-100" />
+            </>
+          )}
           <BreadcrumbItem>
             {/* Named from the nav registry, so a page can never end up with a
                 breadcrumb that disagrees with its own sidebar entry. */}
-            <BreadcrumbPage>{current ? t(current.labelKey) : null}</BreadcrumbPage>
+            <BreadcrumbPage>{current ? t(current.link.labelKey) : null}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

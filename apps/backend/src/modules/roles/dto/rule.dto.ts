@@ -13,7 +13,16 @@ import {
   ValidationOptions,
 } from "class-validator";
 
-import { ACTIONS, collectPlaceholders, CONDITION_PLACEHOLDERS, SUBJECTS } from "@repo/access";
+import type { AppResourceSubject } from "@repo/access";
+import {
+  ACTIONS,
+  collectPlaceholders,
+  CONDITION_PLACEHOLDERS,
+  FIELD_SCOPED_ACTION,
+  isSubject,
+  SUBJECTS,
+  WRITABLE_FIELDS,
+} from "@repo/access";
 
 export const MAX_RULE_FIELDS = 50;
 export const MAX_CONDITIONS_BYTES = 4_000;
@@ -23,11 +32,15 @@ export const REASON_MAX = 200;
 /**
  * The MongoDB query operators a stored condition may use.
  *
- * An allowlist rather than a denylist: CASL evaluates these through
- * `@ucast/mongo2js`, and the set it understands is small and known, so anything
- * outside it is either a typo — a silently non-matching rule — or an attempt at
- * something the evaluator was not meant to do. Listing what is permitted means a
- * future operator added upstream cannot arrive here unreviewed.
+ * This list is exactly what `createAppAbility` can evaluate, and keeping the two equal is
+ * the whole point. An unsupported operator does not raise when a rule is evaluated — ucast
+ * reads `{ $or: [...] }` as a comparison against a field named `$or`, matches nothing, and
+ * the role quietly grants less than it says. The only place anyone is watching is the write,
+ * so that is where the set is enforced.
+ *
+ * The four logical operators are here because `@repo/access` registers them with the matcher
+ * on purpose; they are not in CASL's default set. `$mod` and `$where` are left out: the
+ * first has no use here, and the second evaluates a caller-supplied function.
  */
 const ALLOWED_OPERATORS = new Set([
   "$eq",
@@ -134,6 +147,77 @@ export function IsRuleConditions(options?: ValidationOptions) {
 }
 
 /**
+ * Walks a rule's `fields` and reports the first thing wrong with it.
+ *
+ * Both checks exist because the alternative is a rule that appears to restrict something
+ * and does not:
+ *
+ *  - `fields` is only honoured on `update` (see `FIELD_SCOPED_ACTION`). Stored on a
+ *    `read` rule it would look like column-level read filtering, which this API does not
+ *    do; on `manage` it would be honoured for updates and silently ignored for the
+ *    reads and deletes that action also covers.
+ *  - A misspelled column is invisible once saved. `["despot"]` does not restrict a rule
+ *    to the depot — it restricts it to a field no request will ever name, which quietly
+ *    revokes the whole grant.
+ *
+ * Reads the sibling `action` and `subject` off the object under validation, so the
+ * message can name the fields that *are* available for that subject.
+ */
+function inspectFields(value: unknown, rule: Partial<RuleDto>): ConditionProblem | null {
+  if (value === null || value === undefined) return null;
+
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    return { message: "fields must be an array of field names" };
+  }
+
+  if (value.length === 0) return null;
+
+  if (rule.action !== FIELD_SCOPED_ACTION) {
+    return {
+      message: `fields may only be set on an ${FIELD_SCOPED_ACTION} rule — no other action is field-checked`,
+    };
+  }
+
+  if (!isSubject(rule.subject) || rule.subject === "all") {
+    return { message: `fields cannot be used with the "${String(rule.subject)}" subject` };
+  }
+
+  const available: readonly string[] = WRITABLE_FIELDS[rule.subject as AppResourceSubject];
+  const unknown = (value as string[]).find((entry) => !available.includes(entry));
+
+  if (unknown) {
+    return {
+      message: `"${unknown}" is not a writable field of ${rule.subject} — available: ${available.join(", ")}`,
+    };
+  }
+
+  return null;
+}
+
+/** Validates a rule's `fields`, reporting *why* rather than just "invalid". */
+export function IsRuleFields(options?: ValidationOptions) {
+  return function (target: object, propertyName: string) {
+    registerDecorator({
+      name: "isRuleFields",
+      target: target.constructor,
+      propertyName,
+      options,
+      validator: {
+        validate(value: unknown, args?: ValidationArguments) {
+          return inspectFields(value, (args?.object ?? {}) as Partial<RuleDto>) === null;
+        },
+        defaultMessage(args: ValidationArguments) {
+          return (
+            inspectFields(args.value, args.object as Partial<RuleDto>)?.message ??
+            "fields are invalid"
+          );
+        },
+      },
+    });
+  };
+}
+
+/**
  * One rule a role grants — an (action, subject) pair plus the CASL modifiers.
  *
  * `action` and `subject` name a row in the permission catalog; the service resolves
@@ -161,6 +245,7 @@ export class RuleDto {
   @IsString({ each: true })
   @MaxLength(120, { each: true })
   @ArrayMaxSize(MAX_RULE_FIELDS)
+  @IsRuleFields()
   @IsOptional()
   fields?: string[] | null;
 

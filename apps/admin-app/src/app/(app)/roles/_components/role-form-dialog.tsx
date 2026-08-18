@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { WRITABLE_FIELDS } from "@repo/access";
 import { Button } from "@repo/ui/components/button";
 import {
   Dialog,
@@ -30,6 +31,7 @@ import { Textarea } from "@repo/ui/components/textarea";
 
 import type { RoleFormInput } from "../_lib/schemas";
 import type { Role, UpdateRolePayload } from "~/services/roles/types";
+import { useFieldAccess } from "~/components/providers/ability-provider";
 import { getApiErrorMessage, isConflict } from "~/lib/axios";
 import { useCreateRole } from "~/services/roles/use-create-role";
 import { useUpdateRole } from "~/services/roles/use-update-role";
@@ -53,10 +55,23 @@ interface RoleFormDialogProps {
 export function RoleFormDialog({ open, onOpenChange, role }: RoleFormDialogProps) {
   const t = useTranslations("Roles.form");
   const tv = useTranslations("Roles.validation");
+  const tcommon = useTranslations("Common");
 
   const isEdit = Boolean(role);
   const createRole = useCreateRole();
   const updateRole = useUpdateRole();
+
+  /**
+   * Which of this role's identity fields the caller may write.
+   *
+   * The interesting exclusion is not on this form: `permissions` is a field of a role too,
+   * and the matrix on `/roles/[id]` is what it gates. Here it is only name, key and
+   * description — the three a rule may withhold while still allowing the rename.
+   */
+  const canWriteField = useFieldAccess("Role", role);
+  const restrictedCount = WRITABLE_FIELDS.Role.filter(
+    (field) => field !== "permissions" && !canWriteField(field),
+  ).length;
 
   // Rebuilt when the language changes so validation errors are translated too.
   const schema = useMemo(
@@ -146,6 +161,11 @@ export function RoleFormDialog({ open, onOpenChange, role }: RoleFormDialogProps
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            {restrictedCount > 0 ? (
+              <p className="bg-muted/50 text-muted-foreground rounded-lg border p-3 text-sm">
+                {tcommon("fieldsRestricted")}
+              </p>
+            ) : null}
             <FormField
               control={form.control}
               name="name"
@@ -156,6 +176,7 @@ export function RoleFormDialog({ open, onOpenChange, role }: RoleFormDialogProps
                     <Input
                       placeholder={t("namePlaceholder")}
                       autoComplete="off"
+                      disabled={!canWriteField("name")}
                       {...field}
                       onChange={(event) => {
                         field.onChange(event);
@@ -186,8 +207,9 @@ export function RoleFormDialog({ open, onOpenChange, role }: RoleFormDialogProps
                       placeholder={t("keyPlaceholder")}
                       autoComplete="off"
                       // The one field a system role cannot change: code refers to `admin`
-                      // by key, so renaming it would break the install silently.
-                      disabled={role?.isSystem}
+                      // by key, so renaming it would break the install silently. A rule
+                      // narrowed to the other fields disables it for an ordinary role too.
+                      disabled={role?.isSystem || !canWriteField("key")}
                       {...field}
                       onChange={(event) => {
                         setKeyLinked(false);
@@ -210,7 +232,12 @@ export function RoleFormDialog({ open, onOpenChange, role }: RoleFormDialogProps
                 <FormItem>
                   <FormLabel>{t("description")}</FormLabel>
                   <FormControl>
-                    <Textarea rows={2} placeholder={t("descriptionPlaceholder")} {...field} />
+                    <Textarea
+                      rows={2}
+                      placeholder={t("descriptionPlaceholder")}
+                      disabled={!canWriteField("description")}
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>{t("descriptionOptional")}</FormDescription>
                   <FormMessage />

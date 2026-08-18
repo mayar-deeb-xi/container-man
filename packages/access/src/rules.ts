@@ -19,9 +19,21 @@ export interface AppRule {
    * `interpolateConditions`, which resolves them per request.
    */
   conditions?: Record<string, unknown> | null;
-  /** Restricts the rule to these fields; `null` means the whole subject. */
+  /**
+   * Restricts the rule to these fields; `null` means the whole subject.
+   *
+   * Enforced on writes only — see `FIELD_SCOPED_ACTION` — so the API refuses to store
+   * this on a rule whose action is not `update`. A read is never filtered column by
+   * column: `conditions` is what restricts reading, and it does it by row.
+   */
   fields?: string[] | null;
-  /** A deny rule. CASL gives these precedence over any allow they overlap. */
+  /**
+   * A deny rule.
+   *
+   * Precedence over an overlapping allow depends on order — CASL takes the last matching
+   * rule — so whoever assembles the array puts the inverted ones last. `AbilityService`
+   * does; a caller that builds rules by hand has to.
+   */
   inverted?: boolean;
   /** Shown to the user when an inverted rule is what refused them. */
   reason?: string | null;

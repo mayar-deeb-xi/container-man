@@ -4,20 +4,22 @@
     "loading": "Loading…",
     "cancel": "Cancel",
     "save": "Save",
-    "retry": "Try again"
+    "retry": "Try again",
+    "fieldsRestricted": "Some fields are greyed out: your permissions do not cover them."
   },
   "Nav": {
     "groups": {
-      "overview": "Overview",
       "system": "System"
     },
     "dashboard": "Dashboard",
-    "containers": "Containers",
+    "administration": "Administration",
     "users": "Users",
+    "roles": "Roles",
+    "management": "Management",
+    "containers": "Containers",
     "settings": "Settings",
     "support": "Support",
-    "toggleSidebar": "Toggle sidebar",
-    "roles": "Roles"
+    "toggleSidebar": "Toggle sidebar"
   },
   "Theme": {
     "toggle": "Toggle theme",
@@ -151,6 +153,7 @@
         "title": "Roles",
         "description": "Everything this person may do comes from the roles checked here.",
         "selfNotice": "These are your own roles. Another administrator has to change them — the API refuses to let anyone edit their own.",
+        "restrictedNotice": "Your permissions do not cover changing this person's roles.",
         "empty": "No roles exist yet. Create one first.",
         "noDescription": "No description.",
         "viewPermissions": "View permissions",
@@ -406,6 +409,7 @@
     "matrix": {
       "subject": "Subject",
       "lockedNotice": "This role always has full access. Its permissions are fixed in code so an install can never be left with nobody able to administer it.",
+      "readOnlyNotice": "You may see what this role grants, but not change it.",
       "managesAll": "Full access to this subject.",
       "hasDetails": "Has conditions, field limits or a denial",
       "invalid": "Invalid",
@@ -419,8 +423,8 @@
       "invalidJson": "This is not valid JSON.",
       "notAnObject": "Conditions must be a JSON object.",
       "fields": "Fields",
-      "fieldsPlaceholder": "name, description",
-      "fieldsHint": "Comma-separated. Leave empty to allow every field.",
+      "fieldsAll": "Every field is allowed. Choose fields to limit this permission to them.",
+      "fieldsHint": "This permission covers only the selected fields. Field limits apply to update permissions.",
       "inverted": "Make this a denial",
       "invertedHint": "A denial wins over any permission that overlaps it, including full access.",
       "reason": "Reason",

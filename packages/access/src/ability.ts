@@ -1,5 +1,7 @@
 import type { ForcedSubject, MongoAbility } from "@casl/ability";
-import { createMongoAbility, subject as tagSubject } from "@casl/ability";
+import { buildMongoQueryMatcher, createMongoAbility, subject as tagSubject } from "@casl/ability";
+import { and, nor, not, or } from "@ucast/js";
+import { $and, $nor, $not, $or } from "@ucast/mongo";
 
 import type { AppRule } from "./rules";
 import type { AppAction, AppSubject } from "./vocabulary";
@@ -27,6 +29,24 @@ export type AppSubjects = AppSubject | AppSubjectInstance;
 export type AppAbility = MongoAbility<[AppAction, AppSubjects]>;
 
 /**
+ * The condition evaluator, with MongoDB's logical operators added back.
+ *
+ * CASL's default matcher understands the comparison operators and nothing else — and it
+ * does not complain about the rest: a condition of `{ $or: [...] }` parses as a comparison
+ * against a field literally named `$or`, matches no row, and so revokes the grant it was
+ * meant to widen. Silently, which is the worst way for a permission to fail.
+ *
+ * Registering the four logical instructions is what makes the operator list the API
+ * validates writes against actually true, and it buys the conditions this domain wants:
+ * "assigned to me, or not assigned to anyone" is one rule rather than an argument about
+ * which of two roles a person should hold.
+ *
+ * `and` is already among CASL's interpreters — several keys in one condition object are an
+ * implicit AND — so for that one only the parsing instruction was missing.
+ */
+const conditionsMatcher = buildMongoQueryMatcher({ $and, $or, $nor, $not }, { and, or, nor, not });
+
+/**
  * Builds an ability from already-resolved rules.
  *
  * Takes rules rather than a user on purpose: the backend resolves them from the
@@ -39,7 +59,7 @@ export function createAppAbility(rules: readonly AppRule[]): AppAbility {
   // Cast because CASL types `RawRuleFrom` with its own generics; `AppRule` is that
   // shape by construction, and keeping our own interface is what lets the wire
   // format be documented in one place.
-  return createMongoAbility<[AppAction, AppSubjects]>(rules as never);
+  return createMongoAbility<[AppAction, AppSubjects]>(rules as never, { conditionsMatcher });
 }
 
 /**

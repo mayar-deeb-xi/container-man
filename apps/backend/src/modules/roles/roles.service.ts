@@ -19,7 +19,8 @@ import {
   or,
 } from "drizzle-orm";
 
-import { isSuperRole, permissionKey, SUPER_ROLE_KEY } from "@repo/access";
+import type { AppAbility } from "@repo/access";
+import { asSubject, isSuperRole, permissionKey, SUPER_ROLE_KEY } from "@repo/access";
 import { permissions, rolePermissions, roles, userRoles, users } from "@repo/db";
 
 import type { BaseResponse } from "../../lib/base.dto";
@@ -30,6 +31,7 @@ import type { RuleDto } from "./dto/rule.dto";
 import type { SetRolePermissionsDto } from "./dto/set-role-permissions.dto";
 import type { UpdateRoleDto } from "./dto/update-role.dto";
 import type { RoleDetailEntity, RoleEntity, RoleRuleEntity } from "./entities/role.entity";
+import { assertFieldsAllowed, touchedFields } from "../../lib/ability/field-access";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { escapeLike, isUniqueViolation } from "../../lib/sql.utils";
 
@@ -146,8 +148,17 @@ export class RolesService {
     }
   }
 
-  async update(id: string, dto: UpdateRoleDto): Promise<BaseResponse<RoleDetailEntity>> {
+  async update(
+    id: string,
+    dto: UpdateRoleDto,
+    ability: AppAbility,
+  ): Promise<BaseResponse<RoleDetailEntity>> {
     const existing = await this.requireRole(id);
+
+    // Which columns of the role the caller may write. Nothing here narrows *which roles*
+    // are editable — a role has no owner for a condition to match on — so unlike the users
+    // and containers services this is the only per-row check there is to make.
+    assertFieldsAllowed(ability, asSubject("Role", existing), touchedFields(dto));
 
     // A system role's key is what code refers to — `SUPER_ROLE_KEY`, the seed, the
     // migration's backfill — so renaming it would break the install silently. The
@@ -188,8 +199,16 @@ export class RolesService {
   async setPermissions(
     id: string,
     dto: SetRolePermissionsDto,
+    ability: AppAbility,
   ): Promise<BaseResponse<RoleDetailEntity>> {
     const role = await this.requireRole(id);
+
+    // What a role grants is a field of the role, and the one that matters: `update Role`
+    // narrowed to `["name", "description"]` is permission to tidy up the role list
+    // without permission to change anybody's access. Without this check that rule would
+    // pass the guard and then be ignored here, which is the failure mode that looks like
+    // it works.
+    assertFieldsAllowed(ability, asSubject("Role", role), ["permissions"]);
 
     // The superuser role's rules live in code (`SYSTEM_ROLES`), not in this table's
     // editable surface. Allowing the matrix to strip `manage all` would let an

@@ -17,5 +17,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # Optional: the backend runs fine without it. Set REDIS_URL in .env to use it.
+  redis:
+    image: redis:8-alpine
+    container_name: container-man-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres_data:
+  redis_data:

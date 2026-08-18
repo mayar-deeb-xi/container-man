@@ -99,9 +99,24 @@ export class AbilityService {
 
     const context: RuleContext = { user: { id: user.id, email: user.email } };
 
+    // Denies last, and this is load-bearing. CASL resolves overlapping rules by order —
+    // the *last* matching rule wins, not the inverted one — so with the rows in whatever
+    // order the join returned, a user holding both a role that grants `delete Container`
+    // and one that forbids it would get whichever the planner happened to emit last.
+    // Sorting the inverted rules to the end makes a deny beat every allow it overlaps,
+    // which is what every comment about inverted rules in this codebase assumes, and what
+    // lets a restriction be expressed as one extra role rather than by editing the others.
+    //
+    // A stable sort, so rules that share an `inverted` value keep their relative order:
+    // among denies, or among allows, precedence is not something an operator can see or
+    // control, and it must not silently depend on row order either.
+    const ordered = [...stored].sort(
+      (a, b) => Number(a.inverted ?? false) - Number(b.inverted ?? false),
+    );
+
     return {
       roles: [...roleById.values()].sort((a, b) => a.name.localeCompare(b.name)),
-      rules: packRules(stored, context),
+      rules: packRules(ordered, context),
     };
   }
 

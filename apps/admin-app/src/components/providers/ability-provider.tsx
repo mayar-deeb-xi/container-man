@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useMemo } from "react";
 
-import type { AppAbility } from "@repo/access";
-import { createAppAbility, createEmptyAbility } from "@repo/access";
+import type { AppAbility, AppResourceSubject } from "@repo/access";
+import { createAppAbility, createEmptyAbility, FIELD_SCOPED_ACTION } from "@repo/access";
 
 import type { AppAction, AppSubject, SessionUser } from "~/services/auth/types";
 import { useSession } from "~/services/auth/use-session";
@@ -50,6 +50,42 @@ export function useAbility(): AppAbility {
 /** One permission check, as a boolean — the common case. */
 export function useCan(action: AppAction, subject: AppSubject): boolean {
   return useAbility().can(action, subject);
+}
+
+/**
+ * Which fields of one record the user may write — for greying out the inputs they cannot.
+ *
+ * Returns a predicate rather than a list because that is how a form asks: one control at a
+ * time, beside the field it belongs to. A rule with no `fields` permits every field, so the
+ * unrestricted case answers `true` throughout and no form needs a special path for it.
+ *
+ * `record` is the row being edited, and it is required for the same reason the API loads the
+ * row before checking: a rule can be conditional, and "may set the status of the containers
+ * assigned to you" is a question about a particular box. Passing nothing means there is no
+ * row yet — a create — which is never field-checked, so everything is writable. The API is
+ * where that is decided; this only decides what the form offers.
+ *
+ * The two field names that are not columns work here too: `useFieldAccess("User", user)("roles")`
+ * is what gates the role assignment card, and `("Role", role)("permissions")` the matrix.
+ */
+export function useFieldAccess(
+  subject: AppResourceSubject,
+  // `object`, not `Record<string, unknown>`: the records passed here are the API's entity
+  // types, and an interface without an index signature is not assignable to that.
+  record?: object | null,
+): (field: string) => boolean {
+  const ability = useAbility();
+
+  return useMemo(() => {
+    if (!record) return () => true;
+
+    // Tagged as a copy rather than with `asSubject`, which defines the marker on the object
+    // it is given: these are records owned by the query cache, and marking them in place
+    // would outlive this render.
+    const tagged = { ...record, __caslSubjectType__: subject } as never;
+
+    return (field: string) => ability.can(FIELD_SCOPED_ACTION, tagged, field);
+  }, [ability, record, subject]);
 }
 
 interface CanProps {

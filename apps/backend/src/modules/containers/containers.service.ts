@@ -32,6 +32,8 @@ import type { CreateContainerDto } from "./dto/create-container.dto";
 import type { ListContainersDto } from "./dto/list-containers.dto";
 import type { UpdateContainerDto } from "./dto/update-container.dto";
 import type { ContainerEntity } from "./entities/container.entity";
+import { abilityWhere } from "../../lib/ability/ability-where";
+import { assertFieldsAllowed, touchedFields } from "../../lib/ability/field-access";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { escapeLike, isUniqueViolation } from "../../lib/sql.utils";
 import { UNASSIGNED } from "./dto/list-containers.dto";
@@ -58,10 +60,11 @@ export class ContainersService {
    * number. The number is unique among live rows, so it is also a stable paging key with
    * no tiebreaker needed.
    *
-   * The ability is applied per row rather than compiled into SQL, with the same trade-off
-   * the users list documents: `total` counts what the SQL matched, so a caller whose
-   * `read Container` is conditional sees an over-count and possibly a short page. Showing
-   * a box a rule forbids would be the worse failure.
+   * The caller's rules are pushed into the query where they translate and re-checked per row
+   * regardless, so `total` is the number of boxes the caller can actually see. It over-counts
+   * only when a rule cannot be expressed in SQL — a deny, or an operator with no faithful
+   * equivalent — in which case the surplus rows are dropped from the page after the fact, as
+   * they always were. Showing a box a rule forbids would be the worse failure than a short page.
    */
   async list(
     query: ListContainersDto,
@@ -77,6 +80,11 @@ export class ContainersService {
 
     const where = and(
       isNull(containers.deletedAt),
+      // What the caller's own `read Container` rules allow, as SQL where they can be
+      // expressed that way. The per-row check below still decides — see `abilityWhere` for
+      // why it is only ever allowed to under-restrict — but with the conditions in the query
+      // `total` counts what the caller can actually see and a page comes back full.
+      abilityWhere(ability, "read", "Container", getTableColumns(containers)),
       status ? eq(containers.status, status) : undefined,
       type ? eq(containers.type, type) : undefined,
       condition ? eq(containers.condition, condition) : undefined,
@@ -202,7 +210,17 @@ export class ContainersService {
     ability: AppAbility,
   ): Promise<BaseResponse<ContainerEntity>> {
     const existing = await this.requireRow(id);
+    const subject = asSubject("Container", existing);
     this.assertAllowed(ability, "update", existing);
+
+    // Which columns, having established which row. A rule may be narrowed to a set of
+    // fields, and the guard could not see the body: `update Container` limited to
+    // `["status", "depot"]` is a yard hand who moves boxes without re-plating them.
+    //
+    // The setpoint cleared below is not checked against this list. It is a consequence of
+    // a permitted change to `type`, not a field the caller named, and the alternative —
+    // leaving a dry box with a temperature — is a record that lies.
+    assertFieldsAllowed(ability, subject, touchedFields(dto));
 
     // Validated against the row as it will be, not as it was: changing only the tare still
     // has to leave a payload that makes sense against the stored gross.

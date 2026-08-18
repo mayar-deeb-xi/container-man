@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import { WRITABLE_FIELDS } from "@repo/access";
 import { Button } from "@repo/ui/components/button";
 import { Checkbox } from "@repo/ui/components/checkbox";
 import {
@@ -31,7 +32,7 @@ import { Label } from "@repo/ui/components/label";
 
 import type { UserFormInput } from "../_lib/schemas";
 import type { UpdateUserPayload, User } from "~/services/users/types";
-import { useCan } from "~/components/providers/ability-provider";
+import { useCan, useFieldAccess } from "~/components/providers/ability-provider";
 import { getApiErrorMessage, isConflict } from "~/lib/axios";
 import { useRoles } from "~/services/roles/use-roles";
 import { useCreateUser } from "~/services/users/use-create-user";
@@ -69,10 +70,25 @@ export function displayName(user: Pick<User, "name" | "email">): string {
 export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
   const t = useTranslations("Users.form");
   const tv = useTranslations("Users.validation");
+  const tcommon = useTranslations("Common");
 
   const isEdit = Boolean(user);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+
+  /**
+   * Which of this account's fields the caller may write.
+   *
+   * `password` is the one that matters here: being trusted to correct someone's display name
+   * is not being trusted to take over their account, and `update User` narrowed to
+   * `["name"]` says so. The submit sends only what changed, so a disabled input contributes
+   * nothing to the PATCH.
+   */
+  const canWriteField = useFieldAccess("User", user);
+  const restrictedCount = WRITABLE_FIELDS.User.filter(
+    // `roles` is not on this form — it has its own card on the user's page.
+    (field) => field !== "roles" && !canWriteField(field),
+  ).length;
 
   // Only asked for on create, and only from someone allowed to see roles. Anyone else
   // creates the account and an operator with the right grants it its roles afterwards.
@@ -171,6 +187,11 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+            {restrictedCount > 0 ? (
+              <p className="bg-muted/50 text-muted-foreground rounded-lg border p-3 text-sm">
+                {tcommon("fieldsRestricted")}
+              </p>
+            ) : null}
             <FormField
               control={form.control}
               name="name"
@@ -178,7 +199,12 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                 <FormItem>
                   <FormLabel>{t("name")}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t("namePlaceholder")} autoComplete="off" {...field} />
+                    <Input
+                      placeholder={t("namePlaceholder")}
+                      autoComplete="off"
+                      disabled={!canWriteField("name")}
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>{t("nameOptional")}</FormDescription>
                   <FormMessage />
@@ -200,6 +226,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                       dir="ltr"
                       placeholder={t("emailPlaceholder")}
                       autoComplete="off"
+                      disabled={!canWriteField("email")}
                       {...field}
                     />
                   </FormControl>
@@ -215,7 +242,13 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                 <FormItem>
                   <FormLabel>{isEdit ? t("newPassword") : t("password")}</FormLabel>
                   <FormControl>
-                    <Input type="password" dir="ltr" autoComplete="new-password" {...field} />
+                    <Input
+                      type="password"
+                      dir="ltr"
+                      autoComplete="new-password"
+                      disabled={!canWriteField("password")}
+                      {...field}
+                    />
                   </FormControl>
                   {isEdit ? <FormDescription>{t("passwordHint")}</FormDescription> : null}
                   <FormMessage />

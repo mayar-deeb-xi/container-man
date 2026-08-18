@@ -31,6 +31,15 @@ export class AppConfigService {
     return this.get("WEB_ORIGIN");
   }
 
+  /** Undefined when no cache is configured. */
+  get redisUrl(): string | undefined {
+    return this.get("REDIS_URL");
+  }
+
+  get cacheEnabled(): boolean {
+    return Boolean(this.redisUrl);
+  }
+
   get accessSecret(): string {
     return this.get("JWT_ACCESS_SECRET");
   }

@@ -23,7 +23,8 @@ import { siteName } from "@repo/white-label/admin-app";
 import type { SessionUser } from "~/services/auth/types";
 import { AppLogo } from "~/components/common/app-brand";
 import { useAbility } from "~/components/providers/ability-provider";
-import { isActiveHref, NAV_GROUPS, navItemRequirement } from "./nav-config";
+import { isActiveHref, visibleNav } from "./nav-config";
+import { NavSectionItem } from "./nav-section";
 import { NavUser } from "./nav-user";
 
 export function AppSidebar({ user }: { user: SessionUser }) {
@@ -32,15 +33,8 @@ export function AppSidebar({ user }: { user: SessionUser }) {
   const direction = useDirection();
   const ability = useAbility();
 
-  // Filtered before the groups are drawn, not per item: a group whose every entry is
-  // hidden would otherwise render as a bare heading with nothing under it.
-  const groups = NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => {
-      const requires = navItemRequirement(item);
-      return !requires || ability.can(requires.action, requires.subject);
-    }),
-  })).filter((group) => group.items.length > 0);
+  // What this user may see, already pruned of empty sections and groups.
+  const groups = visibleNav((action, subject) => ability.can(action, subject));
 
   return (
     // In a right-to-left locale the sidebar belongs on the right — `dir` alone
@@ -65,18 +59,32 @@ export function AppSidebar({ user }: { user: SessionUser }) {
 
       <SidebarContent>
         {groups.map((group, index) => (
-          <SidebarGroup key={group.labelKey}>
-            <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>
+          <SidebarGroup key={group.labelKey ?? index}>
+            {group.labelKey && <SidebarGroupLabel>{t(group.labelKey)}</SidebarGroupLabel>}
             <SidebarMenu>
-              {group.items.map((item) => {
-                const label = t(item.labelKey);
-                const isActive = isActiveHref(pathname, item.href);
+              {group.entries.map((entry) => {
+                if (entry.kind === "section") {
+                  return (
+                    <NavSectionItem
+                      key={entry.section.labelKey}
+                      section={entry.section}
+                      links={entry.links}
+                    />
+                  );
+                }
+
+                const { link } = entry;
+                const label = t(link.labelKey);
 
                 return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={label}>
-                      <Link href={item.href}>
-                        <item.icon />
+                  <SidebarMenuItem key={link.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActiveHref(pathname, link.href)}
+                      tooltip={label}
+                    >
+                      <Link href={link.href}>
+                        <link.icon />
                         <span>{label}</span>
                       </Link>
                     </SidebarMenuButton>

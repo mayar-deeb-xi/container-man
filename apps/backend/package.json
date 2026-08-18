@@ -18,6 +18,7 @@
     "@nestjs/platform-express": "^11.1.6",
     "@repo/access": "workspace:*",
     "@repo/auth": "workspace:*",
+    "@repo/cache": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/shipping": "workspace:*",
     "class-transformer": "^0.5.1",

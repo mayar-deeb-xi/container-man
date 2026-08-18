@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import type { ContainerSizeFt, ContainerType } from "@repo/shipping";
+import { WRITABLE_FIELDS } from "@repo/access";
 import {
   CONTAINER_CONDITIONS,
   CONTAINER_SIZES_FT,
@@ -51,7 +52,7 @@ import type {
   CreateContainerPayload,
   UpdateContainerPayload,
 } from "~/services/containers/types";
-import { useCan } from "~/components/providers/ability-provider";
+import { useCan, useFieldAccess } from "~/components/providers/ability-provider";
 import { getApiErrorMessage, isConflict } from "~/lib/axios";
 import { useCreateContainer } from "~/services/containers/use-create-container";
 import { useUpdateContainer } from "~/services/containers/use-update-container";
@@ -108,11 +109,26 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
   const tsx = useTranslations("Containers.status");
   const tcond = useTranslations("Containers.condition");
   const tc = useTranslations("Containers");
+  const tcommon = useTranslations("Common");
   const format = useFormatter();
 
   const isEdit = Boolean(container);
   const createContainer = useCreateContainer();
   const updateContainer = useUpdateContainer();
+
+  /**
+   * Which of this box's fields the caller may write.
+   *
+   * A rule can be narrowed to a set of columns, and the API refuses a PATCH that touches any
+   * other — so the form disables what it would refuse rather than letting someone fill in a
+   * field and meet a 403 on save. On create it answers yes throughout: there is no row for a
+   * condition to match and creates are not field-checked.
+   *
+   * The submit only sends what changed, which is what makes a disabled input safe: its value
+   * stays equal to the loaded one, so it never reaches the payload.
+   */
+  const canWriteField = useFieldAccess("Container", container);
+  const restrictedCount = WRITABLE_FIELDS.Container.filter((field) => !canWriteField(field)).length;
 
   // Only offered to someone who may see accounts; anyone else creates the box and leaves the
   // assignment to an operator who can.
@@ -302,6 +318,12 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
+            {restrictedCount > 0 ? (
+              <p className="bg-muted/50 text-muted-foreground rounded-lg border p-3 text-sm">
+                {tcommon("fieldsRestricted")}
+              </p>
+            ) : null}
+
             <section className="space-y-4">
               <h3 className="text-sm font-medium">{t("sections.identity")}</h3>
 
@@ -320,6 +342,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                           className="font-mono"
                           placeholder="MSCU1234565"
                           autoComplete="off"
+                          disabled={!canWriteField("containerNumber")}
                           {...field}
                         />
                       </FormControl>
@@ -336,7 +359,13 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("isoTypeCode")}</FormLabel>
                       <FormControl>
-                        <Input dir="ltr" className="font-mono" placeholder="22G1" {...field} />
+                        <Input
+                          dir="ltr"
+                          className="font-mono"
+                          placeholder="22G1"
+                          disabled={!canWriteField("isoTypeCode")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>{t("isoTypeCodeHint")}</FormDescription>
                       <FormMessage />
@@ -352,6 +381,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                       <FormLabel>{t("type")}</FormLabel>
                       <Select
                         value={field.value}
+                        disabled={!canWriteField("type")}
                         onValueChange={(value) => {
                           field.onChange(value);
                           applyTypicalPlate(
@@ -386,6 +416,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                       <FormLabel>{t("size")}</FormLabel>
                       <Select
                         value={field.value}
+                        disabled={!canWriteField("sizeFt")}
                         onValueChange={(value) => {
                           field.onChange(value);
                           applyTypicalPlate(
@@ -429,6 +460,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                           type="number"
                           dir="ltr"
                           inputMode="numeric"
+                          disabled={!canWriteField("tareWeightKg")}
                           {...field}
                           onChange={(event) => {
                             setPlateLinked(false);
@@ -452,6 +484,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                           type="number"
                           dir="ltr"
                           inputMode="numeric"
+                          disabled={!canWriteField("maxGrossWeightKg")}
                           {...field}
                           onChange={(event) => {
                             setPlateLinked(false);
@@ -471,7 +504,14 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("capacity")}</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" dir="ltr" inputMode="decimal" {...field} />
+                        <Input
+                          type="number"
+                          step="0.01"
+                          dir="ltr"
+                          inputMode="decimal"
+                          disabled={!canWriteField("cubicCapacityM3")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -496,7 +536,11 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("status")}</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        disabled={!canWriteField("status")}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue />
@@ -521,7 +565,11 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("condition")}</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        disabled={!canWriteField("condition")}
+                        onValueChange={field.onChange}
+                      >
                         <FormControl>
                           <SelectTrigger className="w-full">
                             <SelectValue />
@@ -547,7 +595,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("operator")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="MSC" {...field} />
+                        <Input placeholder="MSC" disabled={!canWriteField("operator")} {...field} />
                       </FormControl>
                       <FormDescription>{t("operatorHint")}</FormDescription>
                       <FormMessage />
@@ -562,7 +610,13 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("unlocode")}</FormLabel>
                       <FormControl>
-                        <Input dir="ltr" className="font-mono" placeholder="EGALY" {...field} />
+                        <Input
+                          dir="ltr"
+                          className="font-mono"
+                          placeholder="EGALY"
+                          disabled={!canWriteField("unlocode")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>{t("unlocodeHint")}</FormDescription>
                       <FormMessage />
@@ -577,7 +631,11 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem className="sm:col-span-2">
                       <FormLabel>{t("depot")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("depotPlaceholder")} {...field} />
+                        <Input
+                          placeholder={t("depotPlaceholder")}
+                          disabled={!canWriteField("depot")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -591,7 +649,12 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("manufacturedOn")}</FormLabel>
                       <FormControl>
-                        <Input type="date" dir="ltr" {...field} />
+                        <Input
+                          type="date"
+                          dir="ltr"
+                          disabled={!canWriteField("manufacturedOn")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -605,7 +668,12 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     <FormItem>
                       <FormLabel>{t("nextInspectionOn")}</FormLabel>
                       <FormControl>
-                        <Input type="date" dir="ltr" {...field} />
+                        <Input
+                          type="date"
+                          dir="ltr"
+                          disabled={!canWriteField("nextInspectionOn")}
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>{t("nextInspectionHint")}</FormDescription>
                       <FormMessage />
@@ -628,6 +696,7 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                             step="0.1"
                             dir="ltr"
                             inputMode="decimal"
+                            disabled={!canWriteField("reeferSetpointC")}
                             {...field}
                           />
                         </FormControl>
@@ -645,7 +714,11 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t("assignedTo")}</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          disabled={!canWriteField("assignedToId")}
+                          onValueChange={field.onChange}
+                        >
                           <FormControl>
                             <SelectTrigger className="w-full">
                               <SelectValue />
@@ -675,7 +748,12 @@ export function ContainerFormDialog({ open, onOpenChange, container }: Container
                   <FormItem>
                     <FormLabel>{t("notes")}</FormLabel>
                     <FormControl>
-                      <Textarea rows={3} placeholder={t("notesPlaceholder")} {...field} />
+                      <Textarea
+                        rows={3}
+                        placeholder={t("notesPlaceholder")}
+                        disabled={!canWriteField("notes")}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
