@@ -7,10 +7,10 @@
  */
 
 /** Root brand. App-specific names are derived from this in each app's module. */
-export const brandName = "container-man";
+export const brandName = "Containex";
 
 export const contactInfo = {
-  email: "support@container-man.local",
+  email: "support@containex.local",
   phone: "+1 (555) 123-4567",
   address: "123 Main Street, City, State 12345",
 } as const;

@@ -1,7 +1,7 @@
 import type { BrandLink } from "../index";
 import { brandName, contactInfo } from "../index";
 
-export const siteName = `${brandName} admin`;
+export const siteName = `${brandName} Admin`;
 
 /** Short form used where space is tight — the collapsed sidebar rail, favicons. */
 export const siteShortName = "cm";
