@@ -1,0 +1,458 @@
+{
+  "Common": {
+    "appName": "container-man Administration",
+    "loading": "Wird geladen…",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "retry": "Erneut versuchen",
+    "fieldsRestricted": "Einige Felder sind ausgegraut: Ihre Berechtigungen decken sie nicht ab."
+  },
+  "Nav": {
+    "groups": {
+      "system": "System"
+    },
+    "dashboard": "Dashboard",
+    "administration": "Administration",
+    "users": "Benutzer",
+    "roles": "Rollen",
+    "management": "Verwaltung",
+    "containers": "Container",
+    "settings": "Einstellungen",
+    "support": "Support",
+    "toggleSidebar": "Seitenleiste ein-/ausblenden"
+  },
+  "Theme": {
+    "toggle": "Design wechseln",
+    "light": "Hell",
+    "dark": "Dunkel",
+    "system": "System"
+  },
+  "Locale": {
+    "label": "Sprache",
+    "change": "Sprache wechseln"
+  },
+  "UserMenu": {
+    "account": "Konto",
+    "settings": "Einstellungen",
+    "signOut": "Abmelden",
+    "signingOut": "Wird abgemeldet…"
+  },
+  "Footer": {
+    "copyright": "© {year} {siteName}. Alle Rechte vorbehalten.",
+    "links": {
+      "terms": "Allgemeine Geschäftsbedingungen",
+      "privacy": "Datenschutzerklärung"
+    }
+  },
+  "Login": {
+    "title": "Anmelden",
+    "description": "Geben Sie Ihre Zugangsdaten ein, um die Administration zu öffnen.",
+    "email": "E-Mail",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Passwort",
+    "submit": "Anmelden",
+    "submitting": "Anmeldung läuft…",
+    "invalidCredentials": "E-Mail-Adresse oder Passwort ist falsch",
+    "genericError": "Anmeldung nicht möglich. Bitte versuchen Sie es erneut.",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen",
+    "validation": {
+      "emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordMin": "Das Passwort muss mindestens {min} Zeichen lang sein",
+      "passwordMax": "Das Passwort ist zu lang"
+    }
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "signedInAs": "Angemeldet als {name}.",
+    "account": {
+      "title": "Konto",
+      "description": "Angaben zum aktuell angemeldeten Benutzer.",
+      "name": "Name",
+      "email": "E-Mail",
+      "userId": "Benutzer-ID",
+      "empty": "—",
+      "roles": "Rollen",
+      "noRoles": "Keine Rollen"
+    }
+  },
+  "Users": {
+    "title": "Benutzer",
+    "description": "Konten der Administration und was jedes davon darf.",
+    "add": "Benutzer hinzufügen",
+    "searchPlaceholder": "Nach Name oder E-Mail suchen",
+    "searchLabel": "Benutzer suchen",
+    "you": "Sie",
+    "loadError": "Benutzer konnten nicht geladen werden.",
+    "empty": "Noch keine Benutzer.",
+    "noResults": "Kein Benutzer entspricht diesen Filtern.",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "created": "Erstellt",
+      "actions": "Aktionen",
+      "roles": "Rollen"
+    },
+    "actions": {
+      "label": "Aktionen öffnen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleteSelf": "Sie können Ihr eigenes Konto nicht löschen",
+      "manageRoles": "Rollen verwalten"
+    },
+    "pagination": {
+      "summary": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "form": {
+      "createTitle": "Benutzer hinzufügen",
+      "createDescription": "Das Konto ist unmittelbar nach dem Anlegen nutzbar.",
+      "editTitle": "Benutzer bearbeiten",
+      "editDescription": "Lassen Sie das Passwort leer, um das bisherige zu behalten.",
+      "name": "Name",
+      "namePlaceholder": "Erika Mustermann",
+      "nameOptional": "Optional",
+      "email": "E-Mail",
+      "emailPlaceholder": "benutzer@example.com",
+      "password": "Passwort",
+      "newPassword": "Neues Passwort",
+      "passwordHint": "Meldet den Benutzer auf allen Geräten ab.",
+      "submitCreate": "Benutzer anlegen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{name} wurde angelegt.",
+      "editSuccess": "{name} wurde aktualisiert.",
+      "emailTaken": "Diese E-Mail-Adresse ist bereits vergeben",
+      "error": "Der Benutzer konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+      "roles": "Rollen",
+      "rolesHint": "Leer lassen, um die Standardrolle zu verwenden. Rollen lassen sich später ändern.",
+      "rolesLoading": "Keine Rollen verfügbar."
+    },
+    "remove": {
+      "title": "{name} löschen?",
+      "description": "Die Person wird sofort abgemeldet und kann sich nicht mehr anmelden. Das Konto bleibt erhalten, ein Operator kann den Schritt also zurücknehmen.",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "success": "{name} wurde gelöscht.",
+      "error": "Der Benutzer konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    },
+    "validation": {
+      "emailInvalid": "Geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordMin": "Das Passwort muss mindestens {min} Zeichen lang sein",
+      "passwordMax": "Das Passwort ist zu lang",
+      "nameMax": "Der Name ist zu lang"
+    },
+    "noRoles": "Keine Rollen",
+    "roleFilter": {
+      "all": "Alle Rollen"
+    },
+    "access": {
+      "title": "Zugriff",
+      "back": "Zurück zu den Benutzern",
+      "loadError": "Dieser Benutzer konnte nicht geladen werden.",
+      "roles": {
+        "title": "Rollen",
+        "description": "Alles, was diese Person darf, ergibt sich aus den hier ausgewählten Rollen.",
+        "selfNotice": "Das sind Ihre eigenen Rollen. Sie müssen von einer anderen administrationsberechtigten Person geändert werden — die API lässt niemanden die eigenen Rollen bearbeiten.",
+        "restrictedNotice": "Ihre Berechtigungen decken das Ändern der Rollen dieser Person nicht ab.",
+        "empty": "Es gibt noch keine Rollen. Legen Sie zuerst eine an.",
+        "noDescription": "Keine Beschreibung.",
+        "viewPermissions": "Berechtigungen ansehen",
+        "loadError": "Rollen konnten nicht geladen werden.",
+        "saved": "Rollen aktualisiert.",
+        "error": "Die Rollen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut."
+      },
+      "effective": {
+        "title": "Effektive Berechtigungen",
+        "description": "Was die Rollen oben zusammen ergeben — von der API genau so aufgelöst, wie sie sie durchsetzt.",
+        "empty": "Dieses Konto darf noch nichts.",
+        "denied": "Verweigert",
+        "onlyWhere": "Nur wenn:",
+        "loadError": "Die effektiven Berechtigungen konnten nicht geladen werden."
+      }
+    }
+  },
+  "Containers": {
+    "title": "Container",
+    "description": "Jede Box der Flotte und wo sie sich befindet.",
+    "add": "Container hinzufügen",
+    "searchPlaceholder": "Nach Nummer, Betreiber oder Depot suchen",
+    "searchLabel": "Container suchen",
+    "loadError": "Container konnten nicht geladen werden.",
+    "empty": "Noch keine Container.",
+    "noResults": "Kein Container entspricht diesen Filtern.",
+    "unassigned": "Nicht zugewiesen",
+    "unknownLocation": "Standort unbekannt",
+    "sizeFeet": "{size} ft",
+    "tare": "Tara {weight}",
+    "filters": {
+      "allStatuses": "Alle Status",
+      "allTypes": "Alle Typen",
+      "inspectionDue": "Prüfung fällig"
+    },
+    "columns": {
+      "number": "Container",
+      "equipment": "Equipment",
+      "status": "Status",
+      "location": "Standort",
+      "payload": "Nutzlast",
+      "inspection": "Nächste Prüfung",
+      "assignedTo": "Zugewiesen an",
+      "actions": "Aktionen"
+    },
+    "type": {
+      "dry": "Standard",
+      "high_cube": "High-Cube",
+      "reefer": "Kühlcontainer",
+      "open_top": "Open-Top",
+      "flat_rack": "Flatrack",
+      "tank": "Tankcontainer",
+      "ventilated": "Belüftet",
+      "platform": "Plattform"
+    },
+    "status": {
+      "available": "Verfügbar",
+      "allocated": "Disponiert",
+      "loaded": "Beladen",
+      "in_transit": "Im Transit",
+      "at_port": "Im Hafen",
+      "under_repair": "In Reparatur",
+      "damaged": "Beschädigt",
+      "retired": "Ausgemustert"
+    },
+    "condition": {
+      "new": "Neu",
+      "cargo_worthy": "Ladungsfähig",
+      "wind_water_tight": "Wind- und wasserdicht",
+      "damaged": "Beschädigt"
+    },
+    "inspection": {
+      "overdue": "Überfällig",
+      "due": "Bald fällig"
+    },
+    "actions": {
+      "label": "Aktionen öffnen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen"
+    },
+    "pagination": {
+      "summary": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "form": {
+      "createTitle": "Container hinzufügen",
+      "createDescription": "Übernehmen Sie Kennung und Plattenwerte direkt von der Box.",
+      "editTitle": "Container bearbeiten",
+      "editDescription": "Es wird nur gesendet, was Sie ändern.",
+      "sections": {
+        "identity": "Kennung",
+        "plate": "CSC-Plakette",
+        "operations": "Betrieb"
+      },
+      "number": "Containernummer",
+      "numberHint": "ISO 6346 — vier Buchstaben, sechs Ziffern und eine Prüfziffer.",
+      "numberTaken": "Diese Containernummer ist in der Flotte bereits vorhanden",
+      "isoTypeCode": "ISO-Größen-/Typcode",
+      "isoTypeCodeHint": "Vier Zeichen von der Tür, z. B. 22G1.",
+      "type": "Typ",
+      "size": "Größe",
+      "tare": "Tara (kg)",
+      "maxGross": "Max. Bruttogewicht (kg)",
+      "capacity": "Volumen (m³)",
+      "payloadPreview": "Nutzlast: {weight} kg — Bruttogewicht minus Tara.",
+      "status": "Status",
+      "condition": "Zustand",
+      "operator": "Betreiber",
+      "operatorHint": "Die Linie oder der Leasingnehmer, die ihn betreiben — nicht der eingetragene Eigentümer.",
+      "unlocode": "Standortcode",
+      "unlocodeHint": "UN/LOCODE, z. B. EGALY für Alexandria.",
+      "depot": "Depot oder Terminal",
+      "depotPlaceholder": "Alexandria Container Terminal",
+      "manufacturedOn": "Baudatum",
+      "nextInspectionOn": "Nächste Prüfung",
+      "nextInspectionHint": "Regelmäßige CSC-Prüfung.",
+      "setpoint": "Solltemperatur (°C)",
+      "setpointHint": "Nur bei Kühlcontainern.",
+      "assignedTo": "Zugewiesen an",
+      "assignedToHint": "Das Konto in der Administration, das für diese Box zuständig ist.",
+      "nobody": "Niemand",
+      "notes": "Notizen",
+      "notesPlaceholder": "Schäden, Reparaturen, Ladungsbeschränkungen…",
+      "submitCreate": "Container hinzufügen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{number} wurde hinzugefügt.",
+      "editSuccess": "{number} wurde aktualisiert.",
+      "error": "Der Container konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    },
+    "remove": {
+      "title": "{number} löschen?",
+      "description": "Nutzen Sie das für einen Eintrag, der nicht existieren sollte. Eine verschrottete Box setzen Sie stattdessen auf Ausgemustert — dann bleibt sie mit ihrer Historie in der Flotte. Die Nummer wird zur erneuten Eingabe frei.",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "success": "{number} wurde gelöscht.",
+      "error": "Der Container konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    },
+    "validation": {
+      "numberInvalid": "Geben Sie eine gültige ISO-6346-Nummer ein — prüfen Sie die letzte Ziffer",
+      "isoTypeCode": "Vier Zeichen, z. B. 22G1",
+      "unlocode": "Fünf Zeichen, z. B. EGALY",
+      "tareRange": "Die Tara muss zwischen 500 und 10.000 kg liegen",
+      "grossRange": "Das max. Bruttogewicht muss zwischen 1.000 und 40.000 kg liegen",
+      "payloadPositive": "Das max. Bruttogewicht muss über der Tara liegen",
+      "capacityRange": "Das Volumen muss zwischen 1 und 200 m³ liegen",
+      "setpointRange": "Die Solltemperatur muss zwischen -40 und 40 °C liegen",
+      "setpointReeferOnly": "Nur ein Kühlcontainer hat eine Solltemperatur",
+      "operatorMax": "Der Betreiber ist zu lang",
+      "depotMax": "Das Depot ist zu lang",
+      "notesMax": "Die Notizen sind zu lang",
+      "dateInvalid": "Geben Sie ein gültiges Datum ein"
+    }
+  },
+  "Settings": {
+    "title": "Einstellungen",
+    "description": "Einstellungen für diese Administration.",
+    "appearance": {
+      "title": "Darstellung",
+      "description": "Wählen Sie ein helles oder dunkles Farbschema."
+    },
+    "language": {
+      "title": "Sprache",
+      "description": "Die Sprache, die in der gesamten Administration verwendet wird."
+    }
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Melden Sie sich, wenn etwas nicht funktioniert.",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "address": "Adresse"
+  },
+  "Roles": {
+    "title": "Rollen",
+    "description": "Rollen bündeln Berechtigungen, und Benutzer halten so viele Rollen, wie sie brauchen.",
+    "add": "Rolle hinzufügen",
+    "searchPlaceholder": "Nach Name oder Schlüssel suchen",
+    "searchLabel": "Rollen suchen",
+    "system": "System",
+    "locked": "Gesperrt",
+    "lockedHint": "Diese Rolle hat immer vollen Zugriff, ihre Berechtigungen lassen sich daher nicht bearbeiten.",
+    "loadError": "Rollen konnten nicht geladen werden.",
+    "empty": "Noch keine Rollen.",
+    "noResults": "Keine Rolle entspricht dieser Suche.",
+    "columns": {
+      "name": "Rolle",
+      "key": "Schlüssel",
+      "permissions": "Berechtigungen",
+      "users": "Benutzer",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "label": "Aktionen öffnen",
+      "permissions": "Berechtigungen bearbeiten",
+      "edit": "Rolle bearbeiten",
+      "delete": "Löschen",
+      "deleteSystem": "Systemrollen können nicht gelöscht werden",
+      "deleteHeld": "{count, plural, one {# Benutzer hat diese Rolle} other {# Benutzer haben diese Rolle}}"
+    },
+    "pagination": {
+      "summary": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "form": {
+      "createTitle": "Rolle hinzufügen",
+      "createDescription": "Benennen Sie die Rolle jetzt und legen Sie im nächsten Schritt fest, was sie gewährt.",
+      "editTitle": "Rolle bearbeiten",
+      "editDescription": "Der Schlüssel ist das, worauf Code und Links verweisen — ändern Sie ihn mit Bedacht.",
+      "name": "Name",
+      "namePlaceholder": "Release-Manager",
+      "key": "Schlüssel",
+      "keyPlaceholder": "release-manager",
+      "keyHint": "Kleinbuchstaben, Ziffern und Bindestriche. Wird in Links und im Code verwendet.",
+      "keySystemHint": "Der Schlüssel einer Systemrolle kann nicht geändert werden.",
+      "keyTaken": "Dieser Schlüssel ist bereits vergeben",
+      "description": "Beschreibung",
+      "descriptionPlaceholder": "Wofür diese Rolle gedacht ist",
+      "descriptionOptional": "Optional",
+      "submitCreate": "Rolle anlegen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{name} wurde angelegt.",
+      "editSuccess": "{name} wurde aktualisiert.",
+      "error": "Die Rolle konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    },
+    "remove": {
+      "title": "{name} löschen?",
+      "description": "Die Rolle und alles, was sie gewährt, werden entfernt. Benutzer müssen neu zugewiesen werden, bevor eine Rolle gelöscht werden kann.",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "success": "{name} wurde gelöscht.",
+      "error": "Die Rolle konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
+    },
+    "detail": {
+      "title": "Rollenberechtigungen",
+      "back": "Zurück zu den Rollen",
+      "loadError": "Diese Rolle konnte nicht geladen werden.",
+      "holders": "{count, plural, =0 {Niemand hat diese Rolle} one {# Benutzer hat diese Rolle} other {# Benutzer haben diese Rolle}}"
+    },
+    "subjects": {
+      "all": "Alles",
+      "allHint": "Setzt alle Zeilen darunter außer Kraft.",
+      "User": "Benutzer",
+      "UserHint": "Konten der Administration.",
+      "Role": "Rollen",
+      "RoleHint": "Rollen und die Berechtigungen, die sie gewähren.",
+      "Container": "Container",
+      "ContainerHint": "Alles, was unter dieser Administration läuft."
+    },
+    "matrix": {
+      "subject": "Ressource",
+      "lockedNotice": "Diese Rolle hat immer vollen Zugriff. Ihre Berechtigungen sind im Code festgelegt, damit eine Installation nie ohne administrationsberechtigte Person zurückbleibt.",
+      "readOnlyNotice": "Sie dürfen sehen, was diese Rolle gewährt, sie aber nicht ändern.",
+      "managesAll": "Voller Zugriff auf diese Ressource.",
+      "hasDetails": "Hat Bedingungen, Feldgrenzen oder eine Verweigerung",
+      "invalid": "Ungültig",
+      "detailsTitle": "Regeldetails",
+      "detailsDescription": "Schränken Sie eine gewährte Berechtigung auf bestimmte Datensätze oder Felder ein, oder machen Sie daraus eine ausdrückliche Verweigerung.",
+      "deny": "Verweigern",
+      "conditional": "Bedingt",
+      "fieldLimited": "Felder",
+      "conditions": "Bedingungen",
+      "conditionsHint": "Ein JSON-Objekt, das gegen den Datensatz geprüft wird. Mit {userId} oder {userEmail} verweisen Sie auf den angemeldeten Benutzer.",
+      "invalidJson": "Das ist kein gültiges JSON.",
+      "notAnObject": "Bedingungen müssen ein JSON-Objekt sein.",
+      "fields": "Felder",
+      "fieldsAll": "Alle Felder sind erlaubt. Wählen Sie Felder aus, um die Berechtigung darauf zu beschränken.",
+      "fieldsHint": "Diese Berechtigung gilt nur für die ausgewählten Felder. Feldgrenzen wirken auf Aktualisierungsberechtigungen.",
+      "inverted": "Daraus eine Verweigerung machen",
+      "invertedHint": "Eine Verweigerung gewinnt gegen jede Berechtigung, die sie überschneidet — auch gegen vollen Zugriff.",
+      "reason": "Begründung",
+      "reasonPlaceholder": "Auditoren löschen niemals Container",
+      "reasonHint": "Wird dem Benutzer angezeigt, wenn diese Verweigerung ihn abgewiesen hat.",
+      "unsaved": "Nicht gespeicherte Änderungen",
+      "upToDate": "Aktuell",
+      "reset": "Zurücksetzen",
+      "fixErrors": "Einige Regeln konnten nicht gespeichert werden — prüfen Sie die markierten.",
+      "saved": "Die Berechtigungen von {name} wurden gespeichert.",
+      "saveError": "Die Berechtigungen konnten nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    },
+    "verbs": {
+      "manage": "Verwalten",
+      "create": "Erstellen",
+      "read": "Lesen",
+      "update": "Aktualisieren",
+      "delete": "Löschen"
+    },
+    "validation": {
+      "keyRequired": "Ein Schlüssel mit mindestens 2 Zeichen ist erforderlich",
+      "keyPattern": "Verwenden Sie Kleinbuchstaben, Ziffern und Bindestriche, beginnend mit einem Buchstaben",
+      "keyMax": "Der Schlüssel ist zu lang",
+      "nameRequired": "Ein Name ist erforderlich",
+      "nameMax": "Der Name ist zu lang",
+      "descriptionMax": "Die Beschreibung ist zu lang"
+    }
+  }
+}

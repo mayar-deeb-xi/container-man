@@ -6,7 +6,7 @@
  * a locale in the path would buy no SEO while costing a rewrite of every link,
  * redirect, and `proxy.ts` guard in the app. A cookie keeps routing untouched.
  */
-export const locales = ["en", "ar"] as const;
+export const locales = ["en", "ar", "de"] as const;
 
 export type Locale = (typeof locales)[number];
 
@@ -25,12 +25,14 @@ export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export const localeDirections: Record<Locale, "ltr" | "rtl"> = {
   en: "ltr",
   ar: "rtl",
+  de: "ltr",
 };
 
 /** Endonyms — a language picker should name each language in that language. */
 export const localeNames: Record<Locale, string> = {
   en: "English",
   ar: "العربية",
+  de: "Deutsch",
 };
 
 export function isLocale(value: unknown): value is Locale {
