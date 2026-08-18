@@ -1,159 +1,118 @@
-# Turborepo starter
+# container-man
 
-This Turborepo starter is maintained by the Turborepo core team.
+A Turborepo monorepo: a Next.js admin console backed by a NestJS API, with
+PostgreSQL + Drizzle and cookie-based JWT auth.
 
-## Using this example
+## Stack
 
-Run the following command:
+| Layer    | Choice                                                         |
+| -------- | -------------------------------------------------------------- |
+| Frontend | Next.js 16 (App Router), shadcn/ui, Tailwind v4                |
+| Forms    | react-hook-form + Zod (`zodResolver`)                          |
+| Data     | axios + TanStack React Query                                   |
+| Backend  | NestJS 11, class-validator DTOs                                |
+| Database | PostgreSQL 17 + Drizzle ORM                                    |
+| Auth     | JWT access + refresh tokens in httpOnly cookies, with rotation |
 
-```sh
-npx create-turbo@latest
+## Layout
+
+```
+apps/
+  admin-app/     Next.js admin console (port 3000)
+  backend/       NestJS API (port 3001)
+packages/
+  auth/          JWT signing/verification, password hashing, cookie contract
+  db/            Drizzle schema, client, migrations, seed
+  ui/            shadcn/ui components (Tailwind v4)
+tooling/
+  eslint/        Shared flat configs: base, next-js, nest, react-internal
+  typescript/    Shared tsconfigs: base, nextjs, nest, library, react-library
+  prettier/      Shared Prettier config with import sorting
 ```
 
-## What's inside?
+`packages/auth` is shared because the backend and the admin app's `proxy.ts` both
+need the same cookie names, TTLs, and token handling — keeping them in one place
+is what stops the two from drifting apart. `packages/db` is used by the **backend
+only**; the admin app talks to the API and never to Postgres.
 
-This Turborepo includes the following packages/apps:
+## Getting started
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
+```bash
+pnpm install
+cp .env.example .env      # a single .env at the root serves every workspace
+pnpm dev:db               # start Postgres in Docker
+pnpm db:migrate           # apply migrations
+pnpm db:seed              # create the admin user (there is no signup flow)
+pnpm dev                  # admin-app on :3000, backend on :3001
 ```
 
-Without global `turbo`, use your package manager:
+Sign in at http://localhost:3000/login with the credentials printed by
+`pnpm db:seed` (default `admin@example.com` / `password123`).
 
-```sh
-cd my-turborepo
-npx turbo build
-pnpm dlx turbo build
-pnpm exec turbo build
-```
+## Scripts
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+| Command            | What it does                                      |
+| ------------------ | ------------------------------------------------- |
+| `pnpm dev`         | Run every app in watch mode                       |
+| `pnpm build`       | Build all workspaces                              |
+| `pnpm lint`        | ESLint, zero warnings tolerated                   |
+| `pnpm check-types` | `tsc --noEmit` everywhere                         |
+| `pnpm format`      | Prettier write                                    |
+| `pnpm db:generate` | Generate a migration from schema changes          |
+| `pnpm db:migrate`  | Apply pending migrations                          |
+| `pnpm db:push`     | Push schema directly (dev only, skips migrations) |
+| `pnpm db:seed`     | Upsert the admin user — safe to re-run            |
+| `pnpm db:studio`   | Drizzle Studio                                    |
+| `pnpm ui-add`      | Add a shadcn component to `packages/ui`           |
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Auth design
 
-```sh
-turbo build --filter=docs
-```
+Users are created by `pnpm db:seed`; there is no registration endpoint.
 
-Without global `turbo`:
+**Endpoints** — `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`,
+`GET /auth/me`.
 
-```sh
-npx turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+**Tokens.** Login sets two httpOnly cookies: a short-lived access token (15m) and
+a long-lived refresh token (7d). The refresh token's `jti` _is_ the `sessions` row
+id, so rotation and reuse-detection are a single primary-key lookup. Only a
+SHA-256 digest of the refresh token is stored.
 
-### Develop
+**Rotation and reuse-detection.** Every refresh revokes the presented token and
+issues a new pair. A token presented after it was revoked means it was captured,
+so all of that user's sessions are revoked. Legitimate races (two tabs, a prefetch
+alongside a navigation) are distinguished from theft by `sessions.replaced_by_id`
+plus a 30-second grace window — without it, ordinary concurrency would sign users
+out.
 
-To develop all apps and packages, run the following command:
+**Where refresh happens.** `apps/admin-app/src/proxy.ts` (Next 16's replacement
+for `middleware.ts`) refreshes expired access tokens. It has to be there: server
+components cannot set cookies, so they can only observe that a token expired,
+never fix it — which would leave `/dashboard` and `/login` redirecting to each
+other forever. In the browser, `src/lib/axios.ts` does the same job for XHR,
+de-duplicating concurrent 401s behind one in-flight refresh.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+**What actually authorizes.** The proxy is a routing convenience and deliberately
+does _not_ verify JWT signatures — that would require shipping the backend's
+signing secret into the frontend, letting it mint tokens. Real checks are
+`getServerSession()` (server components) and the backend's guards.
 
-```sh
-cd my-turborepo
-turbo dev
-```
+**Cookie scope.** Works out of the box on localhost because ports are not part of
+a "site". In production, web and API must share a registrable domain — set
+`COOKIE_DOMAIN=.example.com` and `COOKIE_SECURE=true`. If they must live on
+genuinely different domains, set `COOKIE_SAMESITE=none` (which requires
+`COOKIE_SECURE=true`).
 
-Without global `turbo`, use your package manager:
+## Conventions in `admin-app`
 
-```sh
-cd my-turborepo
-npx turbo dev
-pnpm exec turbo dev
-pnpm exec turbo dev
-```
+- **Server state lives in `src/services/*.service.ts`** — every axios call and
+  React Query hook. A hook like `useLogin` isn't owned by the login page; a
+  re-auth prompt may need it too.
+- **Route-only code colocates** in `_components/` and `_lib/` next to `page.tsx`.
+  The `_` prefix makes them Next.js private folders, excluded from routing.
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Environment
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-pnpm exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-pnpm exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+All variables live in one root `.env` (see `.env.example`). Both apps validate at
+boot and refuse to start on a bad value — the backend with class-validator
+(`apps/backend/src/config/env.ts`), the admin app with `@t3-oss/env-nextjs`
+(`apps/admin-app/src/env.ts`).

@@ -4,11 +4,21 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:db": "docker compose up -d",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,json,md,css}\"",
+    "check-types": "turbo run check-types",
+    "db:generate": "turbo -F @repo/db db:generate",
+    "db:migrate": "turbo -F @repo/db db:migrate",
+    "db:push": "turbo -F @repo/db db:push",
+    "db:seed": "turbo -F @repo/db db:seed",
+    "db:studio": "turbo -F @repo/db db:studio",
+    "ui-add": "pnpm -F @repo/ui ui:add"
   },
+  "prettier": "@repo/prettier-config",
   "devDependencies": {
+    "@repo/prettier-config": "workspace:*",
     "prettier": "^3.7.4",
     "turbo": "^2.10.10",
     "typescript": "5.9.2"
