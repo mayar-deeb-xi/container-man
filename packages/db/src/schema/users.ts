@@ -1,5 +1,7 @@
 import { relations, sql } from "drizzle-orm";
-import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+
+import { sessions } from "./sessions";
 
 export const userRole = pgEnum("user_role", ["admin", "user"]);
 
@@ -32,7 +34,7 @@ export const users = pgTable(
      * whoever tries to re-create the account.
      *
      * Postgres only picks a partial index for `ON CONFLICT` when the statement
-     * repeats the predicate — which is why seed.ts passes `targetWhere`.
+     * repeats the predicate — which is why seeds/users.ts passes `targetWhere`.
      */
     uniqueIndex("users_email_idx")
       .on(table.email)
@@ -40,41 +42,14 @@ export const users = pgTable(
   ],
 );
 
-export const sessions = pgTable(
-  "sessions",
-  {
-    /** Doubles as the refresh token's `jti`, so rotation is a primary-key lookup. */
-    id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    /** SHA-256 of the issued refresh token — the raw token is never stored. */
-    refreshTokenHash: text("refresh_token_hash").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    /**
-     * Session that superseded this one during rotation. Its presence is what
-     * separates a benign race (two tabs refreshing at once) from actual token
-     * theft — see the grace window in AuthService.refresh. Intentionally has no
-     * FK constraint so revoked ancestors can be pruned independently.
-     */
-    replacedById: uuid("replaced_by_id"),
-    userAgent: text("user_agent"),
-    ip: text("ip"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => [index("sessions_user_id_idx").on(table.userId)],
-);
-
+/**
+ * `sessions` is imported from a module that imports this one back. The cycle is
+ * safe because drizzle only invokes this callback when it builds the relational
+ * schema, long after both modules have finished evaluating.
+ */
 export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
 }));
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}));
-
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Session = typeof sessions.$inferSelect;
-export type NewSession = typeof sessions.$inferInsert;

@@ -10,8 +10,8 @@
       "default": "./dist/index.js"
     },
     "./schema": {
-      "types": "./dist/schema.d.ts",
-      "default": "./dist/schema.js"
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
     }
   },
   "scripts": {
@@ -22,7 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push --force",
-    "db:seed": "tsx src/seed.ts",
+    "db:seed": "tsx src/seeds/index.ts",
     "db:studio": "drizzle-kit studio",
     "clean": "rm -rf dist .turbo"
   },
