@@ -27,13 +27,12 @@ export default async function LoginPage() {
   const tf = await getTranslations("Footer");
 
   return (
-    // Columns are placed along the inline axis, so the form leads in both writing
-    // directions without a second rule.
-    <main className="relative grid min-h-svh lg:grid-cols-2">
+    <main className="relative flex min-h-svh flex-col">
       <AuthBackdrop />
 
-      {/* `relative` so the column paints above the backdrop rather than under it. */}
-      <div className="relative flex flex-col gap-10 p-6 md:p-10">
+      {/* One full-width column so the card centres on the page rather than in a half
+          of it. `relative` so the column paints above the backdrop, not under it. */}
+      <div className="relative flex flex-1 flex-col gap-10 p-6 md:p-10">
         {/* Both switches are offered before sign-in on purpose: someone who cannot
             read the form yet is exactly the person who needs the language picker. */}
         <div className="flex items-center justify-between gap-4">
@@ -83,14 +82,6 @@ export default async function LoginPage() {
           </ul>
         </footer>
       </div>
-
-      {/* Decoration, not content: the gradient and the crate pattern showing through
-          from the backdrop are the whole point of the column, so it is `aria-hidden`
-          and simply absent on the narrow screens that have no room to spare. */}
-      <aside
-        aria-hidden="true"
-        className="from-primary/8 to-secondary/8 hidden border-s border-dashed bg-gradient-to-b lg:block"
-      />
     </main>
   );
 }
