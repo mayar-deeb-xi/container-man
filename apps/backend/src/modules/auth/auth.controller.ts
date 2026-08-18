@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 
-import type { AccessTokenPayload, PublicUser } from "@repo/auth";
+import type { AccessTokenPayload } from "@repo/auth";
 import {
   ACCESS_TOKEN_COOKIE,
   buildClearCookieOptions,
@@ -106,7 +106,7 @@ export class AuthController {
   @Get("me")
   @UseGuards(JwtAccessGuard)
   @SerializeOptions({ type: UserResponse })
-  async me(@CurrentUser() payload: AccessTokenPayload): Promise<BaseResponse<PublicUser>> {
+  async me(@CurrentUser() payload: AccessTokenPayload): Promise<BaseResponse<UserEntity>> {
     return this.auth.me(payload.sub);
   }
 

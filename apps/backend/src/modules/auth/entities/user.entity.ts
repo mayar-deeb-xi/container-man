@@ -13,7 +13,7 @@ import type { PublicUser, UserRole } from "@repo/auth";
  * file stops compiling until the new field is deliberately exposed or omitted.
  *
  * Only `@Expose`d fields reach the wire, so this is a second line of defense
- * behind `UsersService.toPublic()` rather than a replacement for it.
+ * behind `AuthService.toEntity()` rather than a replacement for it.
  */
 @Exclude()
 export class UserEntity implements PublicUser {

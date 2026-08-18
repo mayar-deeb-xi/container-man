@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { and, eq, isNull } from "drizzle-orm";
 
-import type { PublicUser, RefreshTokenPayload } from "@repo/auth";
+import type { RefreshTokenPayload } from "@repo/auth";
 import type { User } from "@repo/db";
 import { REFRESH_REUSE_GRACE_MS } from "@repo/auth";
 import { signAccessToken, signRefreshToken } from "@repo/auth/jwt";
@@ -21,6 +21,7 @@ import { AppConfigService } from "../../config/app-config.service";
 import { baseResponse } from "../../lib/base.dto";
 import { DRIZZLE } from "../../lib/db/db.module";
 import { UsersService } from "../users/users.service";
+import { UserEntity } from "./entities/user.entity";
 
 export interface TokenPair {
   accessToken: string;
@@ -151,12 +152,21 @@ export class AuthService {
    * The access token already carries `sub`, but the row is re-read so a user
    * deleted mid-session stops authenticating before their token expires.
    */
-  async me(userId: string): Promise<BaseResponse<PublicUser>> {
+  async me(userId: string): Promise<BaseResponse<UserEntity>> {
     const user = await this.users.findById(userId);
     if (!user) {
       throw new UnauthorizedException("User no longer exists");
     }
-    return baseResponse(UsersService.toPublic(user));
+    return baseResponse(AuthService.toEntity(user));
+  }
+
+  /**
+   * Row to identity payload. Auth maps to its own entity rather than borrowing the
+   * users module's: this one answers "who am I", and must not start shipping row
+   * metadata just because the account view wanted it.
+   */
+  private static toEntity(user: User): UserEntity {
+    return { id: user.id, email: user.email, name: user.name, role: user.role };
   }
 
   private async issueSession(user: User, meta: RequestMeta): Promise<AuthResult> {

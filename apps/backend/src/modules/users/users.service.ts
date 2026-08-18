@@ -1,7 +1,6 @@
 import { ConflictException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { and, count, desc, eq, ilike, isNull, or } from "drizzle-orm";
 
-import type { PublicUser } from "@repo/auth";
 import type { User } from "@repo/db";
 import { hashPassword } from "@repo/auth/password";
 import { sessions, users } from "@repo/db";
@@ -13,12 +12,7 @@ import type { ListUsersDto } from "./dto/list-users.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import { baseResponse, paginated } from "../../lib/base.dto";
 import { DRIZZLE } from "../../lib/db/db.module";
-
-/** The public shape plus the row metadata the admin console lists. */
-export interface AdminUser extends PublicUser {
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { UserEntity } from "./entities/user.entity";
 
 /**
  * Escapes the wildcards Postgres' LIKE grammar reserves.
@@ -65,7 +59,7 @@ export class UsersService {
     return user;
   }
 
-  async list(query: ListUsersDto): Promise<BaseResponse<AdminUser[]>> {
+  async list(query: ListUsersDto): Promise<BaseResponse<UserEntity[]>> {
     const { skip, take, search, role } = query;
 
     const term = search ? `%${escapeLike(search)}%` : undefined;
@@ -92,18 +86,18 @@ export class UsersService {
       this.db.select({ total: count() }).from(users).where(where),
     ]);
 
-    return paginated(rows.map(UsersService.toAdmin), { skip, take, total: totals?.total ?? 0 });
+    return paginated(rows.map(UsersService.toEntity), { skip, take, total: totals?.total ?? 0 });
   }
 
-  async findOne(id: string): Promise<BaseResponse<AdminUser>> {
+  async findOne(id: string): Promise<BaseResponse<UserEntity>> {
     const user = await this.findById(id);
     if (!user) {
       throw new NotFoundException("User not found");
     }
-    return baseResponse(UsersService.toAdmin(user));
+    return baseResponse(UsersService.toEntity(user));
   }
 
-  async create(dto: CreateUserDto): Promise<BaseResponse<AdminUser>> {
+  async create(dto: CreateUserDto): Promise<BaseResponse<UserEntity>> {
     // Checked up front so the common case is a clean 409 rather than a database
     // error; the partial unique index below is what actually guarantees it.
     if (await this.findByEmail(dto.email)) {
@@ -123,7 +117,7 @@ export class UsersService {
         })
         .returning();
 
-      return baseResponse(UsersService.toAdmin(user!));
+      return baseResponse(UsersService.toEntity(user!));
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -132,7 +126,7 @@ export class UsersService {
     }
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<BaseResponse<AdminUser>> {
+  async update(id: string, dto: UpdateUserDto): Promise<BaseResponse<UserEntity>> {
     const existing = await this.findById(id);
     if (!existing) {
       throw new NotFoundException("User not found");
@@ -154,7 +148,7 @@ export class UsersService {
     // An empty PATCH is not an error, but writing it would bump `updated_at` and
     // make an audit trail claim a change that never happened.
     if (Object.keys(patch).length === 0) {
-      return baseResponse(UsersService.toAdmin(existing));
+      return baseResponse(UsersService.toEntity(existing));
     }
 
     try {
@@ -177,7 +171,7 @@ export class UsersService {
         await this.revokeSessions(id);
       }
 
-      return baseResponse(UsersService.toAdmin(user));
+      return baseResponse(UsersService.toEntity(user));
     } catch (error) {
       if (isUniqueViolation(error)) {
         throw new ConflictException("A user with that email already exists");
@@ -226,12 +220,22 @@ export class UsersService {
       .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)));
   }
 
-  /** Strips the password hash — the only shape that may cross the wire. */
-  static toPublic(user: User): PublicUser {
-    return { id: user.id, email: user.email, name: user.name, role: user.role };
-  }
-
-  static toAdmin(user: User): AdminUser {
-    return { ...UsersService.toPublic(user), createdAt: user.createdAt, updatedAt: user.updatedAt };
+  /**
+   * Row to payload — which is also where the password hash is dropped.
+   *
+   * Typed as the entity rather than as a separate interface: the entity already
+   * declares which columns are exposed, so widening it widens what these methods
+   * are allowed to return, and the two can't drift into disagreeing about the
+   * payload the way two hand-kept copies would.
+   */
+  static toEntity(user: User): UserEntity {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

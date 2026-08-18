@@ -18,7 +18,6 @@ import {
 import type { AccessTokenPayload } from "@repo/auth";
 
 import type { BaseResponse } from "../../lib/base.dto";
-import type { AdminUser } from "./users.service";
 import { CurrentUser } from "../../decorators/current-user.decorator";
 import { Roles } from "../../decorators/roles.decorator";
 import { JwtAccessGuard } from "../../guards/jwt-access.guard";
@@ -27,11 +26,11 @@ import { BaseResponseDTO } from "../../lib/base.dto";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { ListUsersDto } from "./dto/list-users.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
-import { AdminUserEntity } from "./entities/admin-user.entity";
+import { UserEntity } from "./entities/user.entity";
 import { UsersService } from "./users.service";
 
 /** Hoisted so every route below shares one generated envelope class. */
-const AdminUserResponse = BaseResponseDTO(AdminUserEntity);
+const UserResponse = BaseResponseDTO(UserEntity);
 
 /**
  * User administration. Guard order matters: `JwtAccessGuard` attaches the token
@@ -43,23 +42,23 @@ const AdminUserResponse = BaseResponseDTO(AdminUserEntity);
 @Controller("users")
 @UseGuards(JwtAccessGuard, RolesGuard)
 @Roles("admin")
-@SerializeOptions({ type: AdminUserResponse })
+@SerializeOptions({ type: UserResponse })
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @Get()
-  async list(@Query() query: ListUsersDto): Promise<BaseResponse<AdminUser[]>> {
+  async list(@Query() query: ListUsersDto): Promise<BaseResponse<UserEntity[]>> {
     return this.users.list(query);
   }
 
   @Get(":id")
-  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<BaseResponse<AdminUser>> {
+  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<BaseResponse<UserEntity>> {
     return this.users.findOne(id);
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateUserDto): Promise<BaseResponse<AdminUser>> {
+  async create(@Body() dto: CreateUserDto): Promise<BaseResponse<UserEntity>> {
     return this.users.create(dto);
   }
 
@@ -68,7 +67,7 @@ export class UsersController {
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
     @CurrentUser() actor: AccessTokenPayload,
-  ): Promise<BaseResponse<AdminUser>> {
+  ): Promise<BaseResponse<UserEntity>> {
     // Demoting yourself is a one-way door: the moment it lands you can no longer
     // reach this endpoint to undo it, and if you were the last admin nobody can.
     if (id === actor.sub && dto.role && dto.role !== "admin") {
