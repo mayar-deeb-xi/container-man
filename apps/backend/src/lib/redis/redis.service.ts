@@ -58,7 +58,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async get<T>(key: string): Promise<T | undefined> {
     return this.safe("get", async (client) => {
       const raw = await client.get(key);
-      if (raw === null) return undefined;
+
+      // Narrowed by type rather than by `=== null`. node-redis types a reply through its
+      // RESP type mapping, so `get` is not simply `string | null` — under a generic client
+      // the union widens, and `JSON.parse` then refuses the argument. Testing for a string
+      // is both what the parser actually needs and correct for every other reply shape: a
+      // buffer or a nil is not a cached JSON document, and a miss is the honest answer.
+      if (typeof raw !== "string") return undefined;
       try {
         return JSON.parse(raw) as T;
       } catch {
