@@ -54,6 +54,8 @@
     "submitting": "جارٍ تسجيل الدخول…",
     "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
     "genericError": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
+    "showPassword": "إظهار كلمة المرور",
+    "hidePassword": "إخفاء كلمة المرور",
     "validation": {
       "emailInvalid": "أدخل بريدًا إلكترونيًا صحيحًا",
       "passwordMin": "يجب أن تكون كلمة المرور {min} أحرف على الأقل",

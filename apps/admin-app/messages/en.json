@@ -54,6 +54,8 @@
     "submitting": "Signing in…",
     "invalidCredentials": "Invalid email or password",
     "genericError": "Could not sign in. Please try again.",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "validation": {
       "emailInvalid": "Enter a valid email address",
       "passwordMin": "Password must be at least {min} characters",

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -30,6 +30,10 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useLogin();
+
+  // Typing a long password blind is the most common reason a correct one gets
+  // rejected, so it can be checked — never on by default, and never remembered.
+  const [revealed, setRevealed] = useState(false);
 
   // Rebuilt when the language changes so validation errors are translated too.
   const schema = useMemo(
@@ -99,9 +103,35 @@ export function LoginForm() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t("password")}</FormLabel>
-              <FormControl>
-                <Input type="password" dir="ltr" autoComplete="current-password" {...field} />
-              </FormControl>
+              {/* The wrapper sits outside FormControl on purpose: FormControl passes the
+                  label and error wiring to its single child, and a div in between would
+                  take that wiring instead of the input. */}
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type={revealed ? "text" : "password"}
+                    dir="ltr"
+                    autoComplete="current-password"
+                    className="pr-10"
+                    {...field}
+                  />
+                </FormControl>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  // Physical `right`, not logical `end`: the field itself is forced to
+                  // LTR because a credential is never localised text, so the toggle
+                  // follows the field's reading order rather than the page's and stays
+                  // at the end of what was typed in either locale.
+                  className="text-muted-foreground hover:text-foreground absolute right-1 top-1/2 -translate-y-1/2"
+                  aria-label={revealed ? t("hidePassword") : t("showPassword")}
+                  aria-pressed={revealed}
+                  onClick={() => setRevealed((shown) => !shown)}
+                >
+                  {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
