@@ -16,6 +16,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@repo/access": "workspace:*",
     "@repo/auth": "workspace:*",
+    "@repo/shipping": "workspace:*",
     "@repo/ui": "workspace:*",
     "@repo/white-label": "workspace:*",
     "@t3-oss/env-nextjs": "^0.13.11",

@@ -170,8 +170,141 @@
   },
   "Containers": {
     "title": "الحاويات",
-    "description": "كل ما يعمل ضمن هذه اللوحة.",
-    "empty": "لا توجد حاويات بعد."
+    "description": "كل حاوية في الأسطول، وموقع كل واحدة منها.",
+    "add": "إضافة حاوية",
+    "searchPlaceholder": "البحث بالرقم أو المشغّل أو المستودع",
+    "searchLabel": "البحث في الحاويات",
+    "loadError": "تعذّر تحميل الحاويات.",
+    "empty": "لا توجد حاويات بعد.",
+    "noResults": "لا توجد حاويات مطابقة لهذه المرشّحات.",
+    "unassigned": "غير مُسندة",
+    "unknownLocation": "الموقع غير معروف",
+    "sizeFeet": "{size} قدم",
+    "tare": "الوزن الفارغ {weight}",
+    "filters": {
+      "allStatuses": "كل الحالات",
+      "allTypes": "كل الأنواع",
+      "inspectionDue": "فحص مستحق"
+    },
+    "columns": {
+      "number": "الحاوية",
+      "equipment": "المعدّة",
+      "status": "الحالة",
+      "location": "الموقع",
+      "payload": "الحمولة",
+      "inspection": "الفحص القادم",
+      "assignedTo": "مُسندة إلى",
+      "actions": "الإجراءات"
+    },
+    "type": {
+      "dry": "جافة",
+      "high_cube": "عالية",
+      "reefer": "مبرّدة",
+      "open_top": "مفتوحة السطح",
+      "flat_rack": "منصة بجوانب",
+      "tank": "صهريج",
+      "ventilated": "مهوّاة",
+      "platform": "منصة"
+    },
+    "status": {
+      "available": "متاحة",
+      "allocated": "مخصّصة",
+      "loaded": "محمّلة",
+      "in_transit": "في الطريق",
+      "at_port": "في الميناء",
+      "under_repair": "تحت الإصلاح",
+      "damaged": "متضرّرة",
+      "retired": "خارج الخدمة"
+    },
+    "condition": {
+      "new": "جديدة",
+      "cargo_worthy": "صالحة للشحن",
+      "wind_water_tight": "مانعة للماء والهواء",
+      "damaged": "متضرّرة"
+    },
+    "inspection": {
+      "overdue": "متأخّر",
+      "due": "قريبًا"
+    },
+    "actions": {
+      "label": "فتح الإجراءات",
+      "edit": "تعديل",
+      "delete": "حذف"
+    },
+    "pagination": {
+      "summary": "{from}–{to} من {total}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "form": {
+      "createTitle": "إضافة حاوية",
+      "createDescription": "انسخ الهوية وأرقام اللوحة من الحاوية نفسها.",
+      "editTitle": "تعديل الحاوية",
+      "editDescription": "يُرسل ما تغيّره فقط.",
+      "sections": {
+        "identity": "الهوية",
+        "plate": "لوحة CSC",
+        "operations": "التشغيل"
+      },
+      "number": "رقم الحاوية",
+      "numberHint": "ISO 6346 — أربعة حروف وستة أرقام ورقم تحقّق.",
+      "numberTaken": "هذا الرقم موجود بالفعل في الأسطول",
+      "isoTypeCode": "رمز المقاس/النوع",
+      "isoTypeCodeHint": "أربعة أحرف من الباب، مثل 22G1.",
+      "type": "النوع",
+      "size": "المقاس",
+      "tare": "الوزن الفارغ (كجم)",
+      "maxGross": "أقصى وزن إجمالي (كجم)",
+      "capacity": "السعة (م³)",
+      "payloadPreview": "الحمولة: {weight} كجم — الوزن الإجمالي ناقص الفارغ.",
+      "status": "الحالة",
+      "condition": "الجودة",
+      "operator": "المشغّل",
+      "operatorHint": "الخط أو المستأجر الذي يشغّلها، لا المالك المسجّل.",
+      "unlocode": "رمز الموقع",
+      "unlocodeHint": "UN/LOCODE، مثل EGALY للإسكندرية.",
+      "depot": "المستودع أو المحطة",
+      "depotPlaceholder": "محطة حاويات الإسكندرية",
+      "manufacturedOn": "سنة الصنع",
+      "nextInspectionOn": "الفحص القادم",
+      "nextInspectionHint": "الفحص الدوري وفق CSC.",
+      "setpoint": "درجة الضبط (°م)",
+      "setpointHint": "للمبرّدة فقط.",
+      "assignedTo": "مُسندة إلى",
+      "assignedToHint": "حساب اللوحة المسؤول عن هذه الحاوية.",
+      "nobody": "لا أحد",
+      "notes": "ملاحظات",
+      "notesPlaceholder": "أضرار، إصلاحات، قيود على الشحن…",
+      "submitCreate": "إضافة الحاوية",
+      "submitEdit": "حفظ التغييرات",
+      "submitting": "جارٍ الحفظ…",
+      "createSuccess": "تمت إضافة {number}.",
+      "editSuccess": "تم تحديث {number}.",
+      "error": "تعذّر حفظ الحاوية. حاول مرة أخرى."
+    },
+    "remove": {
+      "title": "حذف {number}؟",
+      "description": "استخدم هذا لسجل ما كان ينبغي وجوده. الحاوية المُشطَّبة تُضبط على «خارج الخدمة» فتبقى في الأسطول مع تاريخها. سيصبح الرقم متاحًا للإدخال من جديد.",
+      "confirm": "حذف",
+      "deleting": "جارٍ الحذف…",
+      "success": "تم حذف {number}.",
+      "error": "تعذّر حذف الحاوية. حاول مرة أخرى."
+    },
+    "validation": {
+      "numberInvalid": "أدخل رقم ISO 6346 صحيحًا — تحقّق من الرقم الأخير",
+      "isoTypeCode": "أربعة أحرف، مثل 22G1",
+      "unlocode": "خمسة أحرف، مثل EGALY",
+      "tareRange": "الوزن الفارغ بين 500 و10,000 كجم",
+      "grossRange": "الوزن الإجمالي بين 1,000 و40,000 كجم",
+      "payloadPositive": "يجب أن يزيد الوزن الإجمالي على الوزن الفارغ",
+      "capacityRange": "السعة بين 1 و200 م³",
+      "setpointRange": "درجة الضبط بين -40 و40 °م",
+      "setpointReeferOnly": "درجة الضبط للمبرّدة فقط",
+      "operatorMax": "اسم المشغّل طويل جدًا",
+      "depotMax": "اسم المستودع طويل جدًا",
+      "notesMax": "الملاحظات طويلة جدًا",
+      "dateInvalid": "أدخل تاريخًا صحيحًا"
+    }
   },
   "Settings": {
     "title": "الإعدادات",

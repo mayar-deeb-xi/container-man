@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
+import { containers } from "./containers";
 import { sessions } from "./sessions";
 import { userRoles } from "./user-roles";
 
@@ -54,6 +55,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   roles: many(userRoles, { relationName: "userRoleHolder" }),
   rolesGranted: many(userRoles, { relationName: "userRoleGrantor" }),
+  containersAssigned: many(containers),
 }));
 
 export type User = typeof users.$inferSelect;

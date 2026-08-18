@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, Search } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 
+import { asSubject } from "@repo/access";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import { useDirection } from "@repo/ui/components/direction-provider";
@@ -33,7 +34,7 @@ import {
 } from "@repo/ui/components/table";
 
 import type { User } from "~/services/users/types";
-import { Can, useCan } from "~/components/providers/ability-provider";
+import { Can, useAbility, useCan } from "~/components/providers/ability-provider";
 import { useRoles } from "~/services/roles/use-roles";
 import { useUsers } from "~/services/users/use-users";
 import { useDebouncedValue } from "../_lib/use-debounced-value";
@@ -100,8 +101,10 @@ export function UsersTable({
   );
   const roles = roleOptions.data?.roles ?? [];
 
-  const canDelete = useCan("delete", "User");
-  const canUpdate = useCan("update", "User");
+  // The ability itself for the row actions: a rule may be conditioned on the row — "edit
+  // your own account only" — so whether the menu has anything in it is a question per user,
+  // and a coarse check would render a trigger that opens an empty popover.
+  const ability = useAbility();
 
   const users = data?.users ?? [];
   const total = data?.pagination.total ?? 0;
@@ -196,6 +199,9 @@ export function UsersTable({
             ) : (
               users.map((user) => {
                 const isSelf = user.id === currentUserId;
+                const subject = asSubject("User", user);
+                const canEditThis = ability.can("update", subject);
+                const canDeleteThis = ability.can("delete", subject);
 
                 return (
                   <TableRow key={user.id}>
@@ -239,7 +245,7 @@ export function UsersTable({
                       })}
                     </TableCell>
                     <TableCell>
-                      {canReadRoles || canUpdate || canDelete ? (
+                      {canReadRoles || canEditThis || canDeleteThis ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" aria-label={t("actions.label")}>
@@ -255,14 +261,14 @@ export function UsersTable({
                                 <Link href={`/users/${user.id}`}>{t("actions.manageRoles")}</Link>
                               </DropdownMenuItem>
                             ) : null}
-                            <Can I="update" a="User">
+                            {canEditThis ? (
                               <DropdownMenuItem onClick={() => openEdit(user)}>
                                 {t("actions.edit")}
                               </DropdownMenuItem>
-                            </Can>
-                            <Can I="delete" a="User">
-                              {/* The backend refuses this one; disabling it here means
-                                  finding that out before clicking rather than after. */}
+                            ) : null}
+                            {canDeleteThis ? (
+                              /* The backend refuses this one; disabling it here means finding
+                                 that out before clicking rather than after. */
                               <DropdownMenuItem
                                 variant="destructive"
                                 disabled={isSelf}
@@ -271,7 +277,7 @@ export function UsersTable({
                               >
                                 {t("actions.delete")}
                               </DropdownMenuItem>
-                            </Can>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       ) : null}

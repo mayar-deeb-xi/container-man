@@ -20,12 +20,22 @@ type FormFieldContextValue<
 
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
+/**
+ * Three generics rather than the two shadcn ships with.
+ *
+ * The third is react-hook-form's *transformed* values type, which a form whose Zod schema
+ * transforms has to declare — string inputs parsed into numbers, blanks dropped. Without it
+ * forwarded, `control` from such a form is not assignable here, and the alternative is
+ * casting the control away at every call site, which discards the field-name checking this
+ * component exists to provide.
+ */
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+  TTransformedValues = TFieldValues,
 >({
   ...props
-}: ControllerProps<TFieldValues, TName>) => {
+}: ControllerProps<TFieldValues, TName, TTransformedValues>) => {
   return (
     <FormFieldContext.Provider value={{ name: props.name }}>
       <Controller {...props} />

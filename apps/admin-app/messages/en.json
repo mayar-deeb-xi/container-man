@@ -170,8 +170,141 @@
   },
   "Containers": {
     "title": "Containers",
-    "description": "Everything running under this console.",
-    "empty": "No containers yet."
+    "description": "Every box in the fleet, and where each one is.",
+    "add": "Add container",
+    "searchPlaceholder": "Search by number, operator or depot",
+    "searchLabel": "Search containers",
+    "loadError": "Could not load containers.",
+    "empty": "No containers yet.",
+    "noResults": "No containers match these filters.",
+    "unassigned": "Unassigned",
+    "unknownLocation": "Location unknown",
+    "sizeFeet": "{size} ft",
+    "tare": "Tare {weight}",
+    "filters": {
+      "allStatuses": "All statuses",
+      "allTypes": "All types",
+      "inspectionDue": "Due for survey"
+    },
+    "columns": {
+      "number": "Container",
+      "equipment": "Equipment",
+      "status": "Status",
+      "location": "Location",
+      "payload": "Payload",
+      "inspection": "Next survey",
+      "assignedTo": "Assigned to",
+      "actions": "Actions"
+    },
+    "type": {
+      "dry": "Dry",
+      "high_cube": "High cube",
+      "reefer": "Reefer",
+      "open_top": "Open top",
+      "flat_rack": "Flat rack",
+      "tank": "Tank",
+      "ventilated": "Ventilated",
+      "platform": "Platform"
+    },
+    "status": {
+      "available": "Available",
+      "allocated": "Allocated",
+      "loaded": "Loaded",
+      "in_transit": "In transit",
+      "at_port": "At port",
+      "under_repair": "Under repair",
+      "damaged": "Damaged",
+      "retired": "Retired"
+    },
+    "condition": {
+      "new": "New",
+      "cargo_worthy": "Cargo worthy",
+      "wind_water_tight": "Wind and water tight",
+      "damaged": "Damaged"
+    },
+    "inspection": {
+      "overdue": "Overdue",
+      "due": "Due soon"
+    },
+    "actions": {
+      "label": "Open actions",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "createTitle": "Add container",
+      "createDescription": "Copy the identity and the plate figures from the box itself.",
+      "editTitle": "Edit container",
+      "editDescription": "Only what you change is sent.",
+      "sections": {
+        "identity": "Identity",
+        "plate": "CSC plate",
+        "operations": "Operations"
+      },
+      "number": "Container number",
+      "numberHint": "ISO 6346 — four letters, six digits, and a check digit.",
+      "numberTaken": "That container number is already on the fleet",
+      "isoTypeCode": "ISO size/type code",
+      "isoTypeCodeHint": "Four characters from the door, e.g. 22G1.",
+      "type": "Type",
+      "size": "Size",
+      "tare": "Tare weight (kg)",
+      "maxGross": "Max gross weight (kg)",
+      "capacity": "Capacity (m³)",
+      "payloadPreview": "Payload: {weight} kg — max gross minus tare.",
+      "status": "Status",
+      "condition": "Condition",
+      "operator": "Operator",
+      "operatorHint": "The line or lessee running it, not the registered owner.",
+      "unlocode": "Location code",
+      "unlocodeHint": "UN/LOCODE, e.g. EGALY for Alexandria.",
+      "depot": "Depot or terminal",
+      "depotPlaceholder": "Alexandria Container Terminal",
+      "manufacturedOn": "Built",
+      "nextInspectionOn": "Next survey",
+      "nextInspectionHint": "CSC periodic examination.",
+      "setpoint": "Setpoint (°C)",
+      "setpointHint": "Reefers only.",
+      "assignedTo": "Assigned to",
+      "assignedToHint": "The console account responsible for this box.",
+      "nobody": "Nobody",
+      "notes": "Notes",
+      "notesPlaceholder": "Damage, repairs, cargo restrictions…",
+      "submitCreate": "Add container",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{number} was added.",
+      "editSuccess": "{number} was updated.",
+      "error": "Could not save the container. Please try again."
+    },
+    "remove": {
+      "title": "Delete {number}?",
+      "description": "Use this for a row that should not exist. A scrapped box should be set to Retired instead, which keeps it in the fleet with its history. The number becomes free to re-enter.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "success": "{number} was deleted.",
+      "error": "Could not delete the container. Please try again."
+    },
+    "validation": {
+      "numberInvalid": "Enter a valid ISO 6346 number — check the last digit",
+      "isoTypeCode": "Four characters, e.g. 22G1",
+      "unlocode": "Five characters, e.g. EGALY",
+      "tareRange": "Tare must be between 500 and 10,000 kg",
+      "grossRange": "Max gross must be between 1,000 and 40,000 kg",
+      "payloadPositive": "Max gross must exceed the tare weight",
+      "capacityRange": "Capacity must be between 1 and 200 m³",
+      "setpointRange": "Setpoint must be between -40 and 40 °C",
+      "setpointReeferOnly": "Only a reefer has a setpoint",
+      "operatorMax": "Operator is too long",
+      "depotMax": "Depot is too long",
+      "notesMax": "Notes are too long",
+      "dateInvalid": "Enter a valid date"
+    }
   },
   "Settings": {
     "title": "Settings",

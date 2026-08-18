@@ -7,6 +7,7 @@ import { HealthController } from "./health.controller";
 import { AbilityModule } from "./lib/ability/ability.module";
 import { DbModule } from "./lib/db/db.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { ContainersModule } from "./modules/containers/containers.module";
 import { PermissionsModule } from "./modules/permissions/permissions.module";
 import { RolesModule } from "./modules/roles/roles.module";
 import { UsersModule } from "./modules/users/users.module";
@@ -25,6 +26,7 @@ import { UsersModule } from "./modules/users/users.module";
     AbilityModule,
     UsersModule,
     RolesModule,
+    ContainersModule,
     PermissionsModule,
     AuthModule,
   ],

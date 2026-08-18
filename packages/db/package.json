@@ -29,6 +29,7 @@
   "dependencies": {
     "@repo/access": "workspace:*",
     "@repo/auth": "workspace:*",
+    "@repo/shipping": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "postgres": "^3.4.7",
     "zod": "^4.1.12"

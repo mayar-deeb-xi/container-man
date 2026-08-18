@@ -3,6 +3,7 @@
  * (`drizzle.config.ts` points at this file) and what `db` is typed against, so a
  * new table only takes effect once it is listed below.
  */
+export * from "./containers";
 export * from "./permissions";
 export * from "./role-permissions";
 export * from "./roles";

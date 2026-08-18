@@ -61,7 +61,7 @@ function token(name: ConditionPlaceholder): string {
  * in a translation without escaping every brace — and being code, it would be the same
  * sample in every language anyway.
  */
-const CONDITIONS_EXAMPLE = '{ "ownerId": "' + token("user.id") + '" }';
+const CONDITIONS_EXAMPLE = '{ "assignedToId": "' + token("user.id") + '" }';
 
 /**
  * Whether the per-rule editor is offered.

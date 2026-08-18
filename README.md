@@ -5,17 +5,18 @@ PostgreSQL + Drizzle and cookie-based JWT auth.
 
 ## Stack
 
-| Layer    | Choice                                                         |
-| -------- | -------------------------------------------------------------- |
-| Frontend | Next.js 16 (App Router), shadcn/ui, Tailwind v4                |
-| Theming  | next-themes, class-based dark mode                             |
-| i18n     | next-intl 4, cookie-based locale, English + Arabic (RTL)       |
-| Forms    | react-hook-form + Zod (`zodResolver`)                          |
-| Data     | axios + TanStack React Query                                   |
-| Backend  | NestJS 11, class-validator DTOs                                |
-| Database | PostgreSQL 17 + Drizzle ORM                                    |
-| Auth     | JWT access + refresh tokens in httpOnly cookies, with rotation |
-| Access   | CASL abilities from database-backed roles and permissions      |
+| Layer    | Choice                                                          |
+| -------- | --------------------------------------------------------------- |
+| Frontend | Next.js 16 (App Router), shadcn/ui, Tailwind v4                 |
+| Theming  | next-themes, class-based dark mode                              |
+| i18n     | next-intl 4, cookie-based locale, English + Arabic (RTL)        |
+| Forms    | react-hook-form + Zod (`zodResolver`)                           |
+| Data     | axios + TanStack React Query                                    |
+| Backend  | NestJS 11, class-validator DTOs                                 |
+| Database | PostgreSQL 17 + Drizzle ORM                                     |
+| Auth     | JWT access + refresh tokens in httpOnly cookies, with rotation  |
+| Access   | CASL abilities from database-backed roles and permissions       |
+| Domain   | Shipping containers: ISO 6346 identity, CSC plate, survey dates |
 
 ## Layout
 
@@ -27,6 +28,7 @@ packages/
   access/        CASL vocabulary, rule format, ability builder, system roles
   auth/          JWT signing/verification, password hashing, cookie contract
   db/            Drizzle schema, client, migrations, seed
+  shipping/      Container vocabulary, ISO 6346 check digit, CSC plate arithmetic
   ui/            shadcn/ui components (Tailwind v4) — no stylesheet of its own
   white-label/   Brand values: site names, contact details, footer links
 tooling/
@@ -40,7 +42,7 @@ than one of them needs sits beside it:
 
 ```
 modules/auth/, modules/users/   controller + service + module, with dto/ and entities/
-modules/roles/, modules/permissions/
+modules/roles/, modules/permissions/, modules/containers/
 guards/                         JwtAccessGuard, JwtRefreshGuard, AbilityGuard
 decorators/                     CurrentUser, RequireAbility, CurrentAbility
 lib/                            response envelope, pagination query, Drizzle and ability providers
@@ -58,6 +60,12 @@ kind of reason: the backend's guards and the console's `<Can>` must build the _s
 CASL ability from the _same_ rules, and a mirrored copy that drifted would mean a UI
 that offers buttons the API refuses. `packages/db` is used by the **backend only**;
 the admin app talks to the API and never to Postgres.
+
+`packages/shipping` is shared for the third variation on the same theme: the container
+vocabulary backs a database enum, a DTO validator and a console filter, and the ISO 6346
+check digit has to be computed identically by the form and the API. A max-length constant
+duplicated by hand is a nuisance; an algorithm duplicated by hand is a bug waiting for a
+transposed digit.
 
 `packages/white-label` holds _what_ an app is called and _where_ its links point,
 never _how_ anything is worded — wording is translated, so it lives in each app's
@@ -312,6 +320,65 @@ Roles are **not** part of `PATCH /users/:id`. Replacing a set has one sensible v
 and keeping it separate puts the self-lockout check in exactly one place. The create
 endpoint does accept `roleIds`, since a brand-new account can be neither your own nor
 the last administrator.
+
+## Containers
+
+A container here is a **shipping container** — a steel box — so the columns are the ones
+stamped on it and the ones a yard needs to answer about it.
+
+**Identity is ISO 6346.** Eleven characters: a three-letter owner code, a category letter
+(`U`, `J` or `Z`), a six-digit serial, and a **check digit** computed from the other ten.
+`packages/shipping` implements that computation, and both the form and the DTO validate
+against it. This is the rule worth having on both sides: a number is copied by hand off a
+door, and a check digit catches the transposition that a length-and-pattern check waves
+through. Numbers are normalized on the way in — `mscu 123456-5` and `MSCU1234565` are the
+same box, and the column holds one spelling of it.
+
+**Weights come off the CSC plate.** `tare_weight_kg` and `max_gross_weight_kg` are what is
+stamped there; **payload is derived**, not stored, because a third column could disagree
+with the plate. The API sends it, computed once in `@repo/shipping`, rather than leaving
+every client to subtract — and to round — for itself.
+
+**Two axes that look like one.** `status` is operational (`available`, `allocated`,
+`loaded`, `in_transit`, `at_port`, `under_repair`, `damaged`, `retired`) and `condition` is
+survey grade (`new`, `cargo_worthy`, `wind_water_tight`, `damaged`). A box can be grade C
+and in transit, which is exactly the combination a fleet desk goes looking for.
+
+**`retired` is not a delete.** A scrapped box keeps its number and stays in the fleet list
+where its history resolves. Deleting is a soft delete for a row that should not have
+existed — and because the number index is partial, deleting frees the number to be entered
+again.
+
+**Reefer fields are refused elsewhere.** `reefer_setpoint_c` only applies to a `reefer`; the
+API rejects it on any other type, and converting a box away from reefer clears it. A dry
+container with -18°C recorded against it is how a fleet report ends up lying, and nothing
+downstream would flag it.
+
+**Dates are dates.** `manufactured_on` and `next_inspection_on` are `date` columns carried
+as `YYYY-MM-DD` end to end, and compared as strings. A timestamp would invite a timezone to
+move a CSC deadline across a day boundary — enough for a box in Auckland to read as overdue
+in Los Angeles.
+
+**Endpoints** — `GET /containers`, `GET /containers/:id`, `POST /containers`,
+`PATCH /containers/:id`, `DELETE /containers/:id`, each gated by the matching
+`Container` ability. Listing is `skip`/`take` ordered by container number — a register is
+read by number, not by what was added last — with `search` (number, operator, depot),
+`status`, `type`, `condition`, `sizeFt`, `assignedToId` (a user id or `unassigned`) and
+`inspectionDue`, which is the one filter that is a question rather than a column: survey
+passed or due within 30 days.
+
+**`assigned_to_id` is what makes ownership rules real.** It is the _console account_
+responsible for a box — deliberately not the industry's "owner", which is the leasing
+company encoded in the number's owner code. A role granted `update Container` with
+conditions `{ "assignedToId": "${user.id}" }` can edit only its own boxes, enforced by the
+service against the row it loaded and reflected in the console, where the row's actions
+menu appears only on the boxes that rule allows.
+
+That last part has a requirement worth stating: **any column a condition may reference has
+to be exposed by the API.** `assignedToId` is sent alongside the resolved `assignedTo`
+object for exactly that reason — without it the same rule would be enforced by the backend
+and unevaluable in the browser, so every guarded control would hide itself on a box the API
+would happily allow.
 
 ## Styling
 

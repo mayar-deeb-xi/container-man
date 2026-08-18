@@ -6,6 +6,7 @@ import { hashPassword } from "@repo/auth/password";
 
 import { db } from "../client";
 import { permissions, rolePermissions, roles, userRoles, users } from "../schema";
+import { removeDemoContainers, seedDemoContainers } from "./containers";
 
 /**
  * Demo data: the roles and accounts you need to actually exercise authorization.
@@ -222,6 +223,9 @@ export async function seedDemo(): Promise<void> {
     );
   }
 
+  // Last, because the fleet is assigned to the accounts created just above.
+  await seedDemoContainers();
+
   console.log(`Demo password: ${password}`);
 }
 
@@ -248,6 +252,8 @@ export async function removeDemo(): Promise<void> {
   for (const key of DEMO_ROLES.map((definition) => definition.key)) {
     await db.delete(roles).where(eq(roles.key, key));
   }
+
+  await removeDemoContainers();
 
   console.log(`Removed ${removed.length} demo accounts and ${DEMO_ROLES.length} demo roles.`);
 }

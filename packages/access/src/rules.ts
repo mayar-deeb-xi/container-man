@@ -89,13 +89,13 @@ function resolve(name: string, context: RuleContext): string | undefined {
  * Substitutes `${user.id}`-style placeholders throughout a condition tree.
  *
  * A string that is *only* a placeholder is replaced by the value itself rather
- * than by its interpolation, so `{ "ownerId": "${user.id}" }` compares a uuid to a
+ * than by its interpolation, so `{ "assignedToId": "${user.id}" }` compares a uuid to a
  * uuid. Mixed strings (`"acct-${user.id}"`) still interpolate, which is what makes
  * prefixed keys expressible.
  *
  * Returns `null` when a placeholder cannot be resolved. Callers drop the rule
- * rather than keeping a half-substituted one: `{ ownerId: "${user.id}" }` left
- * literal would match no row, but `{ ownerId: null }` could match rows nobody
+ * rather than keeping a half-substituted one: `{ assignedToId: "${user.id}" }` left
+ * literal would match no row, but `{ assignedToId: null }` could match rows nobody
  * owns. Writes are validated against `CONDITION_PLACEHOLDERS`, so this is a
  * backstop for rules that predate a placeholder being removed.
  */
