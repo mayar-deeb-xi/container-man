@@ -28,3 +28,14 @@ if (process.env.NODE_ENV !== "production") {
 export const db = drizzle(sql, { schema });
 
 export type Database = typeof db;
+
+/**
+ * Drains the pool so a SIGTERM finishes in-flight queries instead of severing
+ * their sockets. No-ops in dev: the pool there is cached on globalThis and
+ * outlives any single watch-mode reload, so ending it would hand the next reload
+ * a dead pool.
+ */
+export async function closeDb(): Promise<void> {
+  if (globalForDb.__containerManSql) return;
+  await sql.end({ timeout: 5 });
+}

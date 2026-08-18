@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import type { PublicUser } from "@repo/auth";
 import { ACCESS_TOKEN_COOKIE } from "@repo/auth";
 
+import type { BaseResponse } from "~/lib/base-response";
 import { env } from "~/env";
 
 /**
@@ -33,7 +34,8 @@ export async function getServerSession(): Promise<PublicUser | null> {
     });
 
     if (!response.ok) return null;
-    return (await response.json()) as PublicUser;
+    const body = (await response.json()) as BaseResponse<PublicUser>;
+    return body.data;
   } catch {
     // Backend unreachable — treat as signed out rather than crashing the render.
     return null;

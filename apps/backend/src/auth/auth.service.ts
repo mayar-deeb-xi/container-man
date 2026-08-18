@@ -14,10 +14,12 @@ import {
 } from "@repo/auth/password";
 import { sessions } from "@repo/db";
 
-import type { Database } from "../db/db.module";
+import type { BaseResponse } from "../lib/base.dto";
+import type { Database } from "../lib/db/db.module";
 import type { LoginDto } from "./dto/login.dto";
 import { AppConfigService } from "../config/app-config.service";
-import { DRIZZLE } from "../db/db.module";
+import { baseResponse } from "../lib/base.dto";
+import { DRIZZLE } from "../lib/db/db.module";
 import { UsersService } from "../users/users.service";
 
 export interface TokenPair {
@@ -31,7 +33,13 @@ export interface RequestMeta {
 }
 
 export interface AuthResult {
-  user: PublicUser;
+  /**
+   * The response body, already enveloped. Building it here rather than in the
+   * controller keeps every caller on one payload shape — the controller's only
+   * remaining job is the cookie side effect, which is genuinely HTTP-level and
+   * is why these routes can't just `return this.auth.login(...)` outright.
+   */
+  body: BaseResponse<PublicUser>;
   tokens: TokenPair;
   sessionId: string;
 }
@@ -140,6 +148,18 @@ export class AuthService {
     await this.revokeSession(sessionId);
   }
 
+  /**
+   * The access token already carries `sub`, but the row is re-read so a user
+   * deleted mid-session stops authenticating before their token expires.
+   */
+  async me(userId: string): Promise<BaseResponse<PublicUser>> {
+    const user = await this.users.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException("User no longer exists");
+    }
+    return baseResponse(UsersService.toPublic(user));
+  }
+
   private async issueSession(user: User, meta: RequestMeta): Promise<AuthResult> {
     // The session id is minted up front so it can be the refresh token's `jti`,
     // which makes rotation and reuse-detection a single primary-key lookup.
@@ -168,7 +188,7 @@ export class AuthService {
     });
 
     return {
-      user: UsersService.toPublic(user),
+      body: baseResponse(UsersService.toPublic(user)),
       tokens: { accessToken, refreshToken },
       sessionId,
     };

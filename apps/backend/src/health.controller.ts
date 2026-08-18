@@ -1,9 +1,21 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, SerializeOptions } from "@nestjs/common";
+import { Exclude, Expose } from "class-transformer";
+
+import type { BaseResponse } from "./lib/base.dto";
+import { baseResponse, BaseResponseDTO } from "./lib/base.dto";
+
+@Exclude()
+class HealthEntity {
+  @Expose() status: string;
+}
+
+const HealthResponse = BaseResponseDTO(HealthEntity);
 
 @Controller("health")
 export class HealthController {
   @Get()
-  check(): { status: string } {
-    return { status: "ok" };
+  @SerializeOptions({ type: HealthResponse })
+  check(): BaseResponse<{ status: string }> {
+    return baseResponse({ status: "ok" });
   }
 }

@@ -5,8 +5,8 @@ import type { PublicUser } from "@repo/auth";
 import type { User } from "@repo/db";
 import { users } from "@repo/db";
 
-import type { Database } from "../db/db.module";
-import { DRIZZLE } from "../db/db.module";
+import type { Database } from "../lib/db/db.module";
+import { DRIZZLE } from "../lib/db/db.module";
 
 @Injectable()
 export class UsersService {

@@ -8,7 +8,7 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
+  SerializeOptions,
   UseGuards,
 } from "@nestjs/common";
 
@@ -22,42 +22,48 @@ import {
 
 import type { AuthResult, RequestMeta } from "./auth.service";
 import type { RequestWithRefresh } from "./auth.types";
+import type { BaseResponse } from "../lib/base.dto";
 import { AppConfigService } from "../config/app-config.service";
-import { UsersService } from "../users/users.service";
+import { BaseResponseDTO } from "../lib/base.dto";
+import { UserEntity } from "../users/entities/user.entity";
 import { AuthService } from "./auth.service";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { JwtAccessGuard } from "./guards/jwt-access.guard";
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 
+/** Hoisted so the three routes below share one generated class. */
+const UserResponse = BaseResponseDTO(UserEntity);
+
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
-    private readonly users: UsersService,
     private readonly config: AppConfigService,
   ) {}
 
   /** There is no registration endpoint — users come from `pnpm db:seed`. */
   @Post("login")
   @HttpCode(HttpStatus.OK)
+  @SerializeOptions({ type: UserResponse })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<PublicUser> {
+  ): Promise<BaseResponse<PublicUser>> {
     const result = await this.auth.login(dto, this.meta(req));
     this.setAuthCookies(res, result);
-    return result.user;
+    return result.body;
   }
 
   @Post("refresh")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
+  @SerializeOptions({ type: UserResponse })
   async refresh(
     @Req() req: RequestWithRefresh,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<PublicUser> {
+  ): Promise<BaseResponse<PublicUser>> {
     try {
       const result = await this.auth.refresh(
         req.refresh.payload,
@@ -65,7 +71,7 @@ export class AuthController {
         this.meta(req),
       );
       this.setAuthCookies(res, result);
-      return result.user;
+      return result.body;
     } catch (error) {
       // A dead refresh token means the browser is holding cookies that will fail
       // on every subsequent request; clear them so the client settles on /login
@@ -75,6 +81,11 @@ export class AuthController {
     }
   }
 
+  /**
+   * The one endpoint with no `BaseResponse` envelope: 204 means "no body", and
+   * Express drops any payload written alongside it — an envelope here would be
+   * silently discarded rather than merely redundant.
+   */
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAccessGuard)
@@ -88,12 +99,9 @@ export class AuthController {
 
   @Get("me")
   @UseGuards(JwtAccessGuard)
-  async me(@CurrentUser() payload: AccessTokenPayload): Promise<PublicUser> {
-    const user = await this.users.findById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException("User no longer exists");
-    }
-    return UsersService.toPublic(user);
+  @SerializeOptions({ type: UserResponse })
+  async me(@CurrentUser() payload: AccessTokenPayload): Promise<BaseResponse<PublicUser>> {
+    return this.auth.me(payload.sub);
   }
 
   private meta(req: Request): RequestMeta {

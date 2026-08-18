@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type { PublicUser } from "@repo/auth";
 
+import type { BaseResponse } from "~/lib/base-response";
 import { api, isUnauthorized } from "~/lib/axios";
 import { queryKeys } from "~/lib/query-keys";
 
@@ -19,8 +20,8 @@ export interface LoginPayload {
 // scripts) can reuse them without pulling in React Query.
 
 export async function login(payload: LoginPayload): Promise<PublicUser> {
-  const { data } = await api.post<PublicUser>("/auth/login", payload);
-  return data;
+  const { data } = await api.post<BaseResponse<PublicUser>>("/auth/login", payload);
+  return data.data;
 }
 
 export async function logout(): Promise<void> {
@@ -28,8 +29,8 @@ export async function logout(): Promise<void> {
 }
 
 export async function getMe(): Promise<PublicUser> {
-  const { data } = await api.get<PublicUser>("/auth/me");
-  return data;
+  const { data } = await api.get<BaseResponse<PublicUser>>("/auth/me");
+  return data.data;
 }
 
 // --- Hooks -----------------------------------------------------------------
