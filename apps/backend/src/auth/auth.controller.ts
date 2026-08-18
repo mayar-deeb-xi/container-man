@@ -20,9 +20,9 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "@repo/auth";
 
+import type { BaseResponse } from "../lib/base.dto";
 import type { AuthResult, RequestMeta } from "./auth.service";
 import type { RequestWithRefresh } from "./auth.types";
-import type { BaseResponse } from "../lib/base.dto";
 import { AppConfigService } from "../config/app-config.service";
 import { BaseResponseDTO } from "../lib/base.dto";
 import { UserEntity } from "../users/entities/user.entity";

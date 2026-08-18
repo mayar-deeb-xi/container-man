@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 
 import type { PublicUser } from "@repo/auth";
@@ -15,8 +16,12 @@ import { env } from "~/env";
  * user's benefit, not an authorization boundary (the Next docs are explicit about
  * this). Anything that actually gates data asks the backend, which is the only
  * party that can tell a valid token from a forged one.
+ *
+ * Wrapped in `cache()` so the layout gate and the page that needs the user share
+ * one `/auth/me` round trip per request instead of issuing one each. The cache is
+ * scoped to a single render pass, so it can never leak across users or requests.
  */
-export async function getServerSession(): Promise<PublicUser | null> {
+export const getServerSession = cache(async (): Promise<PublicUser | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE);
 
@@ -40,4 +45,4 @@ export async function getServerSession(): Promise<PublicUser | null> {
     // Backend unreachable — treat as signed out rather than crashing the render.
     return null;
   }
-}
+});

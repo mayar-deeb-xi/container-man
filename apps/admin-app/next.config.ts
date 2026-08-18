@@ -5,11 +5,16 @@ import "./load-root-env";
 import "./src/env";
 
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // @repo/ui ships TypeScript source rather than a build artifact.
-  transpilePackages: ["@repo/ui"],
+  // These packages ship TypeScript source rather than a build artifact.
+  transpilePackages: ["@repo/ui", "@repo/white-label"],
 };
 
-export default nextConfig;
+// Registers src/i18n/request.ts, which is what lets server components call
+// getLocale()/getTranslations() without the locale being passed down as a prop.
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

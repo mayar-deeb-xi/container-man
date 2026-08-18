@@ -1,0 +1,96 @@
+{
+  "Common": {
+    "appName": "لوحة إدارة container-man",
+    "loading": "جارٍ التحميل…",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "retry": "إعادة المحاولة"
+  },
+  "Nav": {
+    "groups": {
+      "overview": "نظرة عامة",
+      "system": "النظام"
+    },
+    "dashboard": "لوحة التحكم",
+    "containers": "الحاويات",
+    "settings": "الإعدادات",
+    "support": "الدعم",
+    "toggleSidebar": "إظهار/إخفاء القائمة الجانبية"
+  },
+  "Theme": {
+    "toggle": "تغيير المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "Locale": {
+    "label": "اللغة",
+    "change": "تغيير اللغة"
+  },
+  "UserMenu": {
+    "account": "الحساب",
+    "settings": "الإعدادات",
+    "signOut": "تسجيل الخروج",
+    "signingOut": "جارٍ تسجيل الخروج…"
+  },
+  "Footer": {
+    "copyright": "© {year} {siteName}. جميع الحقوق محفوظة.",
+    "links": {
+      "terms": "الشروط والأحكام",
+      "privacy": "سياسة الخصوصية"
+    }
+  },
+  "Login": {
+    "title": "تسجيل الدخول",
+    "description": "أدخل بيانات الدخول للوصول إلى لوحة الإدارة.",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "admin@example.com",
+    "password": "كلمة المرور",
+    "submit": "تسجيل الدخول",
+    "submitting": "جارٍ تسجيل الدخول…",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "genericError": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
+    "validation": {
+      "emailInvalid": "أدخل بريدًا إلكترونيًا صحيحًا",
+      "passwordMin": "يجب أن تكون كلمة المرور {min} أحرف على الأقل",
+      "passwordMax": "كلمة المرور طويلة جدًا"
+    }
+  },
+  "Dashboard": {
+    "title": "لوحة التحكم",
+    "signedInAs": "مسجّل الدخول باسم {name}.",
+    "account": {
+      "title": "الحساب",
+      "description": "تفاصيل المستخدم المسجّل حاليًا.",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "userId": "معرّف المستخدم",
+      "empty": "—"
+    }
+  },
+  "Containers": {
+    "title": "الحاويات",
+    "description": "كل ما يعمل ضمن هذه اللوحة.",
+    "empty": "لا توجد حاويات بعد."
+  },
+  "Settings": {
+    "title": "الإعدادات",
+    "description": "تفضيلات لوحة الإدارة.",
+    "appearance": {
+      "title": "المظهر",
+      "description": "اختر بين المظهر الفاتح والداكن."
+    },
+    "language": {
+      "title": "اللغة",
+      "description": "اللغة المستخدمة في كل أنحاء اللوحة."
+    }
+  },
+  "Support": {
+    "title": "الدعم",
+    "description": "تواصل معنا إذا واجهت أي مشكلة.",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان"
+  }
+}

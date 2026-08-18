@@ -1,0 +1,96 @@
+{
+  "Common": {
+    "appName": "container-man admin",
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "save": "Save",
+    "retry": "Try again"
+  },
+  "Nav": {
+    "groups": {
+      "overview": "Overview",
+      "system": "System"
+    },
+    "dashboard": "Dashboard",
+    "containers": "Containers",
+    "settings": "Settings",
+    "support": "Support",
+    "toggleSidebar": "Toggle sidebar"
+  },
+  "Theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "Locale": {
+    "label": "Language",
+    "change": "Change language"
+  },
+  "UserMenu": {
+    "account": "Account",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
+  },
+  "Footer": {
+    "copyright": "© {year} {siteName}. All rights reserved.",
+    "links": {
+      "terms": "Terms and Conditions",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "Login": {
+    "title": "Sign in",
+    "description": "Enter your credentials to access the admin console.",
+    "email": "Email",
+    "emailPlaceholder": "admin@example.com",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "invalidCredentials": "Invalid email or password",
+    "genericError": "Could not sign in. Please try again.",
+    "validation": {
+      "emailInvalid": "Enter a valid email address",
+      "passwordMin": "Password must be at least {min} characters",
+      "passwordMax": "Password is too long"
+    }
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "signedInAs": "Signed in as {name}.",
+    "account": {
+      "title": "Account",
+      "description": "Details for the currently signed-in user.",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "userId": "User ID",
+      "empty": "—"
+    }
+  },
+  "Containers": {
+    "title": "Containers",
+    "description": "Everything running under this console.",
+    "empty": "No containers yet."
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "Preferences for this admin console.",
+    "appearance": {
+      "title": "Appearance",
+      "description": "Choose a light or dark colour scheme."
+    },
+    "language": {
+      "title": "Language",
+      "description": "The language used across the console."
+    }
+  },
+  "Support": {
+    "title": "Support",
+    "description": "Get in touch if something is not working.",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address"
+  }
+}

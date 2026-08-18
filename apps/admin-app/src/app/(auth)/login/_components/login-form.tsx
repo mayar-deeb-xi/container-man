@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -20,15 +22,28 @@ import { Input } from "@repo/ui/components/input";
 import type { LoginInput } from "../_lib/schemas";
 import { getApiErrorMessage, isUnauthorized } from "~/lib/axios";
 import { useLogin } from "~/services/auth.service";
-import { loginSchema } from "../_lib/schemas";
+import { createLoginSchema, PASSWORD_MIN } from "../_lib/schemas";
 
 export function LoginForm() {
+  const t = useTranslations("Login");
+  const tv = useTranslations("Login.validation");
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useLogin();
 
+  // Rebuilt when the language changes so validation errors are translated too.
+  const schema = useMemo(
+    () =>
+      createLoginSchema({
+        emailInvalid: tv("emailInvalid"),
+        passwordMin: tv("passwordMin", { min: PASSWORD_MIN }),
+        passwordMax: tv("passwordMax"),
+      }),
+    [tv],
+  );
+
   const form = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   });
 
@@ -44,11 +59,11 @@ export function LoginForm() {
       if (isUnauthorized(error)) {
         // Surface credential failures on the form rather than as a toast, and
         // never say which of the two fields was wrong.
-        form.setError("root", { message: "Invalid email or password" });
+        form.setError("root", { message: t("invalidCredentials") });
         form.resetField("password");
         return;
       }
-      toast.error(getApiErrorMessage(error, "Could not sign in. Please try again."));
+      toast.error(getApiErrorMessage(error, t("genericError")));
     }
   }
 
@@ -60,11 +75,14 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>{t("email")}</FormLabel>
               <FormControl>
+                {/* Credentials are never localised text, so they stay LTR even in
+                    a right-to-left layout — the label beside them still flips. */}
                 <Input
                   type="email"
-                  placeholder="admin@example.com"
+                  dir="ltr"
+                  placeholder={t("emailPlaceholder")}
                   autoComplete="email"
                   autoFocus
                   {...field}
@@ -80,9 +98,9 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>{t("password")}</FormLabel>
               <FormControl>
-                <Input type="password" autoComplete="current-password" {...field} />
+                <Input type="password" dir="ltr" autoComplete="current-password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -99,10 +117,10 @@ export function LoginForm() {
           {form.formState.isSubmitting ? (
             <>
               <Loader2 className="animate-spin" />
-              Signing in…
+              {t("submitting")}
             </>
           ) : (
-            "Sign in"
+            t("submit")
           )}
         </Button>
       </form>

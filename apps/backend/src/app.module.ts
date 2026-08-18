@@ -4,8 +4,8 @@ import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./auth/auth.module";
 import { AppConfigService } from "./config/app-config.service";
 import { findRootEnvFile, validate } from "./config/env";
-import { DbModule } from "./lib/db/db.module";
 import { HealthController } from "./health.controller";
+import { DbModule } from "./lib/db/db.module";
 import { UsersModule } from "./users/users.module";
 
 @Global()
