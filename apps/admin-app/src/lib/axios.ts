@@ -1,16 +1,16 @@
 import type { AxiosRequestConfig } from "axios";
 import axios, { AxiosError } from "axios";
 
-import { env } from "~/env";
-
 /** Marks a request that has already been replayed, so a retry can't recurse. */
 interface RetriableConfig extends AxiosRequestConfig {
   _retry?: boolean;
 }
 
 export const api = axios.create({
-  baseURL: env.NEXT_PUBLIC_API_URL,
-  // Required for the browser to both send and store the httpOnly auth cookies.
+  // Same-origin path, rewritten to the backend in next.config.ts. Routing
+  // through this app's own origin is what makes the httpOnly auth cookies
+  // first-party, so the browser stores them and proxy.ts can read them.
+  baseURL: "/api/backend",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });

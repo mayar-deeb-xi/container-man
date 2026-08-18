@@ -33,7 +33,7 @@ export const getServerSession = cache(async (): Promise<SessionUser | null> => {
     .join("; ");
 
   try {
-    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/me`, {
+    const response = await fetch(`${env.API_URL}/auth/me`, {
       headers: { cookie: cookieHeader },
       cache: "no-store",
     });

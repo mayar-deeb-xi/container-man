@@ -50,7 +50,7 @@ function readCookie(setCookie: string, name: string): string | undefined {
 
 async function refreshTokens(refreshToken: string): Promise<RefreshOutcome | null> {
   try {
-    const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
+    const response = await fetch(`${env.API_URL}/auth/refresh`, {
       method: "POST",
       headers: { cookie: `${REFRESH_TOKEN_COOKIE}=${refreshToken}` },
       cache: "no-store",
@@ -151,7 +151,10 @@ function clearAuthCookies(response: NextResponse): NextResponse {
 
 export const config = {
   matcher: [
-    // Everything except Next internals, metadata files, and static assets.
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // Everything except the backend rewrite, Next internals, metadata files, and
+    // static assets. api/backend must be excluded because this proxy runs before
+    // rewrites: intercepting it would answer an unauthenticated XHR with a
+    // redirect to the login *page* instead of letting it reach the backend.
+    "/((?!api/backend|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
