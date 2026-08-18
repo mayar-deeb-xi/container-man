@@ -3,8 +3,8 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { ACCESS_TOKEN_COOKIE } from "@repo/auth";
 import { verifyAccessToken } from "@repo/auth/jwt";
 
-import type { RequestWithUser } from "../auth.types";
-import { AppConfigService } from "../../config/app-config.service";
+import type { RequestWithUser } from "../modules/auth/auth.types";
+import { AppConfigService } from "../config/app-config.service";
 
 /**
  * Verifies the access token with the same `@repo/auth/jwt` helpers the admin app's

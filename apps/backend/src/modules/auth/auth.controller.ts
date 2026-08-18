@@ -20,19 +20,19 @@ import {
   REFRESH_TOKEN_COOKIE,
 } from "@repo/auth";
 
-import type { BaseResponse } from "../lib/base.dto";
+import type { BaseResponse } from "../../lib/base.dto";
 import type { AuthResult, RequestMeta } from "./auth.service";
 import type { RequestWithRefresh } from "./auth.types";
-import { AppConfigService } from "../config/app-config.service";
-import { BaseResponseDTO } from "../lib/base.dto";
-import { UserEntity } from "../users/entities/user.entity";
+import { AppConfigService } from "../../config/app-config.service";
+import { CurrentUser } from "../../decorators/current-user.decorator";
+import { JwtAccessGuard } from "../../guards/jwt-access.guard";
+import { JwtRefreshGuard } from "../../guards/jwt-refresh.guard";
+import { BaseResponseDTO } from "../../lib/base.dto";
 import { AuthService } from "./auth.service";
-import { CurrentUser } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
-import { JwtAccessGuard } from "./guards/jwt-access.guard";
-import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
+import { UserEntity } from "./entities/user.entity";
 
-/** Hoisted so the three routes below share one generated class. */
+/** The envelope for `/auth/me`, the one route here with a payload. */
 const UserResponse = BaseResponseDTO(UserEntity);
 
 @Controller("auth")
@@ -42,28 +42,35 @@ export class AuthController {
     private readonly config: AppConfigService,
   ) {}
 
-  /** There is no registration endpoint — users come from `pnpm db:seed`. */
+  /**
+   * Signs in: the entire result is the two cookies on the response, hence 204.
+   *
+   * It deliberately does not echo the user back. Identity has one source — the
+   * `/auth/me` below — so a client can never end up rendering a stale copy it was
+   * handed at login instead of the current row.
+   *
+   * There is no registration endpoint; the first user comes from `pnpm db:seed`
+   * and the rest from `POST /users`.
+   */
   @Post("login")
-  @HttpCode(HttpStatus.OK)
-  @SerializeOptions({ type: UserResponse })
+  @HttpCode(HttpStatus.NO_CONTENT)
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<BaseResponse<PublicUser>> {
+  ): Promise<void> {
     const result = await this.auth.login(dto, this.meta(req));
     this.setAuthCookies(res, result);
-    return result.body;
   }
 
+  /** Rotates the token pair. Like login, the cookies are the whole answer. */
   @Post("refresh")
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtRefreshGuard)
-  @SerializeOptions({ type: UserResponse })
   async refresh(
     @Req() req: RequestWithRefresh,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<BaseResponse<PublicUser>> {
+  ): Promise<void> {
     try {
       const result = await this.auth.refresh(
         req.refresh.payload,
@@ -71,7 +78,6 @@ export class AuthController {
         this.meta(req),
       );
       this.setAuthCookies(res, result);
-      return result.body;
     } catch (error) {
       // A dead refresh token means the browser is holding cookies that will fail
       // on every subsequent request; clear them so the client settles on /login
@@ -82,9 +88,9 @@ export class AuthController {
   }
 
   /**
-   * The one endpoint with no `BaseResponse` envelope: 204 means "no body", and
-   * Express drops any payload written alongside it — an envelope here would be
-   * silently discarded rather than merely redundant.
+   * 204 as well, for the same reason as the two above: there is nothing to say
+   * beyond "it worked", and Express drops any payload written alongside a 204 —
+   * an envelope here would be silently discarded rather than merely redundant.
    */
   @Post("logout")
   @HttpCode(HttpStatus.NO_CONTENT)

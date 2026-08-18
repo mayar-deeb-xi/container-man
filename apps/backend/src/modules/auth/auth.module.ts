@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 
+import { JwtAccessGuard } from "../../guards/jwt-access.guard";
+import { JwtRefreshGuard } from "../../guards/jwt-refresh.guard";
 import { UsersModule } from "../users/users.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { JwtAccessGuard } from "./guards/jwt-access.guard";
-import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 
 @Module({
   imports: [UsersModule],

@@ -3,7 +3,8 @@ import { Exclude, Expose } from "class-transformer";
 import type { PublicUser, UserRole } from "@repo/auth";
 
 /**
- * Serialization allowlist for the user payload.
+ * Serialization allowlist for the identity the auth endpoints hand back — the
+ * answer to "who am I", which is what login, refresh and `/auth/me` all return.
  *
  * This duplicates `PublicUser` on purpose. That interface lives in `@repo/auth`,
  * which the admin app imports at runtime — decorating it there would drag

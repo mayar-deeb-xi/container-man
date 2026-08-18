@@ -14,12 +14,12 @@ import {
 } from "@repo/auth/password";
 import { sessions } from "@repo/db";
 
-import type { BaseResponse } from "../lib/base.dto";
-import type { Database } from "../lib/db/db.module";
+import type { BaseResponse } from "../../lib/base.dto";
+import type { Database } from "../../lib/db/db.module";
 import type { LoginDto } from "./dto/login.dto";
-import { AppConfigService } from "../config/app-config.service";
-import { baseResponse } from "../lib/base.dto";
-import { DRIZZLE } from "../lib/db/db.module";
+import { AppConfigService } from "../../config/app-config.service";
+import { baseResponse } from "../../lib/base.dto";
+import { DRIZZLE } from "../../lib/db/db.module";
 import { UsersService } from "../users/users.service";
 
 export interface TokenPair {
@@ -32,14 +32,13 @@ export interface RequestMeta {
   ip?: string;
 }
 
+/**
+ * What a successful login or refresh produces: a session, and the token pair that
+ * proves it. There is no response body — the controller's only job with this is
+ * the cookie side effect, and a client that wants to know who it just signed in
+ * as asks `/auth/me`.
+ */
 export interface AuthResult {
-  /**
-   * The response body, already enveloped. Building it here rather than in the
-   * controller keeps every caller on one payload shape — the controller's only
-   * remaining job is the cookie side effect, which is genuinely HTTP-level and
-   * is why these routes can't just `return this.auth.login(...)` outright.
-   */
-  body: BaseResponse<PublicUser>;
   tokens: TokenPair;
   sessionId: string;
 }
@@ -187,11 +186,7 @@ export class AuthService {
       ip: meta.ip ?? null,
     });
 
-    return {
-      body: baseResponse(UsersService.toPublic(user)),
-      tokens: { accessToken, refreshToken },
-      sessionId,
-    };
+    return { tokens: { accessToken, refreshToken }, sessionId };
   }
 
   /** `replacedById` marks a rotation, which is how a race is later told from theft. */

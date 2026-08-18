@@ -21,7 +21,7 @@ import { Input } from "@repo/ui/components/input";
 
 import type { LoginInput } from "../_lib/schemas";
 import { getApiErrorMessage, isUnauthorized } from "~/lib/axios";
-import { useLogin } from "~/services/auth.service";
+import { useLogin } from "~/services/auth/use-login";
 import { createLoginSchema, PASSWORD_MIN } from "../_lib/schemas";
 
 export function LoginForm() {

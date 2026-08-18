@@ -1,12 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
-import { AuthModule } from "./auth/auth.module";
 import { AppConfigService } from "./config/app-config.service";
 import { findRootEnvFile, validate } from "./config/env";
 import { HealthController } from "./health.controller";
 import { DbModule } from "./lib/db/db.module";
-import { UsersModule } from "./users/users.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { UsersModule } from "./modules/users/users.module";
 
 @Global()
 @Module({

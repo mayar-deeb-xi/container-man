@@ -1,3 +1,5 @@
+import { sql } from "drizzle-orm";
+
 import { hashPassword } from "@repo/auth/password";
 
 import { db } from "./client";
@@ -24,7 +26,13 @@ async function main() {
     .values({ email, passwordHash, name, role: "admin" })
     .onConflictDoUpdate({
       target: users.email,
-      set: { passwordHash, name, role: "admin" },
+      // The email index is partial, and Postgres only infers a partial index when
+      // the statement repeats its predicate — without this the upsert raises
+      // "no unique or exclusion constraint matching the ON CONFLICT".
+      targetWhere: sql`${users.deletedAt} is null`,
+      // Undeletes the admin too: re-running the seed is how a locked-out operator
+      // gets back in, and a soft-deleted row would otherwise be unreachable.
+      set: { passwordHash, name, role: "admin", deletedAt: null },
     })
     .returning({ id: users.id, email: users.email, role: users.role });
 

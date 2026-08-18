@@ -23,7 +23,8 @@ import {
   useSidebar,
 } from "@repo/ui/components/sidebar";
 
-import { useLogout, useSession } from "~/services/auth.service";
+import { useLogout } from "~/services/auth/use-logout";
+import { useSession } from "~/services/auth/use-session";
 
 /** Two letters from the name, or the email's first two — never an empty circle. */
 function initials(user: PublicUser): string {

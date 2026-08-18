@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { index, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const userRole = pgEnum("user_role", ["admin", "user"]);
@@ -17,8 +17,27 @@ export const users = pgTable(
       .notNull()
       .defaultNow()
       .$onUpdate(() => new Date()),
+    /**
+     * Soft delete. Rows are never removed: sessions — and anything that later
+     * points at a user — would otherwise lose the name behind the id. Every read
+     * path is expected to filter on this being null; see `UsersService`.
+     */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (table) => [uniqueIndex("users_email_idx").on(table.email)],
+  (table) => [
+    /**
+     * Partial on purpose: uniqueness binds live rows only, so deleting a user
+     * frees their address for re-use. A plain unique index would make a soft
+     * delete reserve the email forever, which is indistinguishable from a bug to
+     * whoever tries to re-create the account.
+     *
+     * Postgres only picks a partial index for `ON CONFLICT` when the statement
+     * repeats the predicate — which is why seed.ts passes `targetWhere`.
+     */
+    uniqueIndex("users_email_idx")
+      .on(table.email)
+      .where(sql`${table.deletedAt} is null`),
+  ],
 );
 
 export const sessions = pgTable(

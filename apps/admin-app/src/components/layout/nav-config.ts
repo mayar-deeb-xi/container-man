@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Boxes, HelpCircle, LayoutDashboard, Settings } from "lucide-react";
+import { Boxes, HelpCircle, LayoutDashboard, Settings, Users } from "lucide-react";
 
 interface NavItemShape {
   /** Resolved against the `Nav` message namespace — wording is translated. */
@@ -30,6 +30,7 @@ export const NAV_GROUPS = [
     items: [
       { labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
       { labelKey: "containers", href: "/containers", icon: Boxes },
+      { labelKey: "users", href: "/users", icon: Users },
     ],
   },
   {

@@ -76,3 +76,8 @@ export function getApiErrorMessage(error: unknown, fallback = "Something went wr
 export function isUnauthorized(error: unknown): boolean {
   return error instanceof AxiosError && error.response?.status === 401;
 }
+
+/** A uniqueness clash — an email already taken, in practice. */
+export function isConflict(error: unknown): boolean {
+  return error instanceof AxiosError && error.response?.status === 409;
+}

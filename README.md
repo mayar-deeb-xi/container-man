@@ -33,6 +33,21 @@ tooling/
   prettier/      Shared Prettier config with import sorting
 ```
 
+Inside `apps/backend/src`, feature modules live under `modules/` and anything more
+than one of them needs sits beside it:
+
+```
+modules/auth/, modules/users/   controller + service + module, with dto/ and entities/
+guards/                         JwtAccessGuard, JwtRefreshGuard, RolesGuard
+decorators/                     CurrentUser, Roles
+lib/                            response envelope, pagination query, Drizzle provider
+config/                         env validation and the typed AppConfigService
+```
+
+Guards and decorators are deliberately outside `modules/`: every module reaches for
+them, and leaving them inside the one that happened to need them first makes every
+later import read as a dependency on that feature.
+
 `packages/auth` is shared because the backend and the admin app's `proxy.ts` both
 need the same cookie names, TTLs, and token handling — keeping them in one place
 is what stops the two from drifting apart. `packages/db` is used by the **backend
@@ -74,10 +89,17 @@ Sign in at http://localhost:3000/login with the credentials printed by
 
 ## Auth design
 
-Users are created by `pnpm db:seed`; there is no registration endpoint.
+There is no registration endpoint. `pnpm db:seed` creates the first admin, and
+every account after that is created by an admin through `POST /users`.
 
 **Endpoints** — `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`,
 `GET /auth/me`.
+
+The first three answer **204**: their entire effect is the cookies on the response,
+and none of them echoes the user back. Identity has exactly one source — `/auth/me`
+— so a client can never render a copy it was handed at login while the row behind
+it has moved on. It also keeps each route to one job: signing in is not the same
+question as "who am I".
 
 **Tokens.** Login sets two httpOnly cookies: a short-lived access token (15m) and
 a long-lived refresh token (7d). The refresh token's `jti` _is_ the `sessions` row
@@ -108,6 +130,43 @@ a "site". In production, web and API must share a registrable domain — set
 `COOKIE_DOMAIN=.example.com` and `COOKIE_SECURE=true`. If they must live on
 genuinely different domains, set `COOKIE_SAMESITE=none` (which requires
 `COOKIE_SECURE=true`).
+
+## User management
+
+**Endpoints** — `GET /users`, `GET /users/:id`, `POST /users`, `PATCH /users/:id`,
+`DELETE /users/:id`. All five are admin-only: `JwtAccessGuard` attaches the token
+payload and `RolesGuard` resolves it to a live row. The role is re-read from the
+database rather than trusted from the token, because an access token is valid for
+15 minutes and would otherwise let someone demoted (or deleted) a moment ago keep
+acting as an admin until it expired.
+
+**Listing** is `skip`/`take`, named to match the `pagination` half of the response
+envelope so a client can page by echoing what it was last given. `search` matches
+email and name case-insensitively; `role` filters. `take` is capped at 100.
+
+**Deletes are soft.** `DELETE` stamps `users.deleted_at` and revokes every session
+the user holds, in one transaction — a user must never end up flagged as deleted
+while still holding a refresh token that mints new access tokens. Every read path
+filters on `deleted_at is null`; leave that predicate off anywhere and a deleted
+user starts authenticating again.
+
+The email index is **partial** (`where deleted_at is null`), so deleting a user
+frees their address for re-use. A plain unique index would reserve it forever,
+which is indistinguishable from a bug to whoever tries to re-create the account.
+The cost is that `ON CONFLICT` statements must repeat the predicate for Postgres
+to infer the index — see `targetWhere` in `packages/db/src/seed.ts`.
+
+**A changed password or role revokes the user's sessions** too. The access token
+carries `role`, so its bearer keeps whatever claims it was minted with; forcing a
+fresh login is the only way to reissue them.
+
+Two things the API refuses on principle: deleting your own account, and demoting
+yourself. Both are one-way doors — once it lands you can no longer reach the
+endpoint to undo it, and if you were the last admin, nobody can.
+
+The console lives at `/users` and is gated with `notFound()` for non-admins: the
+API is admin-only, so for anyone else the route may as well not exist, and a table
+that answers 403 to every request only looks broken.
 
 ## Styling
 
@@ -193,9 +252,21 @@ src/global.d.ts                      makes message keys type-checked
 
 ## Conventions in `admin-app`
 
-- **Server state lives in `src/services/*.service.ts`** — every axios call and
-  React Query hook. A hook like `useLogin` isn't owned by the login page; a
-  re-auth prompt may need it too.
+- **Server state lives in `src/services/<resource>/`** — one folder per resource,
+  one file per hook, each exporting its own raw axios call beside it so a server
+  component or a script can reuse the call without pulling in React Query. Shared
+  shapes go in that folder's `types.ts` (`services/users/types.ts`); a type only
+  one hook uses stays in the hook's file.
+
+  ```
+  services/auth/    use-session.ts, use-login.ts, use-logout.ts
+  services/users/   types.ts, use-users.ts, use-user.ts,
+                    use-create-user.ts, use-update-user.ts, use-delete-user.ts
+  ```
+
+  Hooks live here rather than beside the page that first needed them: `useLogin`
+  isn't owned by the login page — a re-auth prompt may need it too.
+
 - **Route-only code colocates** in `_components/` and `_lib/` next to `page.tsx`.
   The `_` prefix makes them Next.js private folders, excluded from routing.
 - **No user-facing string is hard-coded.** Wording goes in `messages/*.json`;

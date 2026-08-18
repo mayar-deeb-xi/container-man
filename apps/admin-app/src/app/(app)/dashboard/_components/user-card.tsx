@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@repo/ui/components/card";
 
-import { useSession } from "~/services/auth.service";
+import { useSession } from "~/services/auth/use-session";
 
 export function UserCard({ initialUser }: { initialUser: PublicUser }) {
   const t = useTranslations("Dashboard.account");

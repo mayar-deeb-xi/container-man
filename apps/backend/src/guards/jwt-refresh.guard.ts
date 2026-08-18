@@ -3,8 +3,8 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { REFRESH_TOKEN_COOKIE } from "@repo/auth";
 import { verifyRefreshToken } from "@repo/auth/jwt";
 
-import type { RequestWithRefresh } from "../auth.types";
-import { AppConfigService } from "../../config/app-config.service";
+import type { RequestWithRefresh } from "../modules/auth/auth.types";
+import { AppConfigService } from "../config/app-config.service";
 
 @Injectable()
 export class JwtRefreshGuard implements CanActivate {

@@ -13,6 +13,7 @@
     },
     "dashboard": "Dashboard",
     "containers": "Containers",
+    "users": "Users",
     "settings": "Settings",
     "support": "Support",
     "toggleSidebar": "Toggle sidebar"
@@ -67,6 +68,76 @@
       "role": "Role",
       "userId": "User ID",
       "empty": "—"
+    }
+  },
+  "Users": {
+    "title": "Users",
+    "description": "Console accounts and what each one may do.",
+    "add": "Add user",
+    "searchPlaceholder": "Search by name or email",
+    "searchLabel": "Search users",
+    "you": "You",
+    "loadError": "Could not load users.",
+    "empty": "No users yet.",
+    "noResults": "No users match these filters.",
+    "roles": {
+      "all": "All roles",
+      "admin": "Admin",
+      "user": "User"
+    },
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "actions": {
+      "label": "Open actions",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteSelf": "You cannot delete your own account"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "createTitle": "Add user",
+      "createDescription": "The account can be used as soon as it is created.",
+      "editTitle": "Edit user",
+      "editDescription": "Leave the password blank to keep the current one.",
+      "name": "Name",
+      "namePlaceholder": "Jane Doe",
+      "nameOptional": "Optional",
+      "email": "Email",
+      "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "newPassword": "New password",
+      "passwordHint": "Signs the user out of every device.",
+      "role": "Role",
+      "submitCreate": "Create user",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{name} was created.",
+      "editSuccess": "{name} was updated.",
+      "emailTaken": "That email is already taken",
+      "error": "Could not save the user. Please try again."
+    },
+    "remove": {
+      "title": "Delete {name}?",
+      "description": "They will be signed out immediately and will no longer be able to sign in. The account is kept, so this can be reversed by an operator.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "success": "{name} was deleted.",
+      "error": "Could not delete the user. Please try again."
+    },
+    "validation": {
+      "emailInvalid": "Enter a valid email address",
+      "passwordMin": "Password must be at least {min} characters",
+      "passwordMax": "Password is too long",
+      "nameMax": "Name is too long"
     }
   },
   "Containers": {
