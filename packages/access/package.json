@@ -20,7 +20,8 @@
   "dependencies": {
     "@casl/ability": "^6.7.3",
     "@ucast/js": "^3.1.0",
-    "@ucast/mongo": "^2.4.3"
+    "@ucast/mongo": "^2.4.3",
+    "@repo/shipping": "workspace:*"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

@@ -11,6 +11,7 @@ import {
   asc,
   count,
   countDistinct,
+  desc,
   eq,
   getTableColumns,
   ilike,
@@ -73,8 +74,9 @@ export class RolesService {
         .where(where)
         .groupBy(roles.id)
         // System roles first, then alphabetical: the two an install always has are the
-        // ones an operator is looking for, and `name` alone would bury them.
-        .orderBy(asc(roles.isSystem), asc(roles.name))
+        // ones an operator is looking for, and `name` alone would bury them. `desc`
+        // because booleans sort false-first ascending — `asc` here once buried them last.
+        .orderBy(desc(roles.isSystem), asc(roles.name))
         .limit(take)
         .offset(skip),
       this.db.select({ total: count() }).from(roles).where(where),
@@ -331,8 +333,6 @@ export class RolesService {
         subject: permissions.subject,
         conditions: rolePermissions.conditions,
         fields: rolePermissions.fields,
-        inverted: rolePermissions.inverted,
-        reason: rolePermissions.reason,
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
@@ -393,8 +393,6 @@ export class RolesService {
         permissionId,
         conditions: rule.conditions ?? null,
         fields: rule.fields && rule.fields.length > 0 ? rule.fields : null,
-        inverted: rule.inverted ?? false,
-        reason: rule.reason ?? null,
       };
     });
   }

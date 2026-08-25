@@ -7,7 +7,8 @@
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "vercel-build": "pnpm -w exec turbo run build --filter=@repo/backend^...",
-    "check-types": "tsc --noEmit",
+    "check-types": "tsc --noEmit && tsc -p tsconfig.spec.json",
+    "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
     "clean": "rm -rf dist .turbo"
   },
@@ -38,6 +39,8 @@
     "@types/express": "^5.0.3",
     "@types/node": "^22.18.12",
     "eslint": "^9.39.1",
-    "typescript": "5.9.2"
+    "postgres": "^3.4.7",
+    "typescript": "5.9.2",
+    "vitest": "^4.1.11"
   }
 }

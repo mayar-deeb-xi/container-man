@@ -20,9 +20,8 @@ import { useUserRules } from "~/services/users/use-user-rules";
  *
  * Read from the API rather than unioned from the roles in the browser. The backend
  * resolves this with the same code its guards use — placeholders substituted for *this*
- * user, inverted rules included — so the panel cannot claim a permission the API would
- * refuse. Recomputing it here would be a second implementation of precedence, and the
- * two would eventually disagree.
+ * user — so the panel cannot claim a permission the API would refuse. Recomputing it
+ * here would be a second implementation, and the two would eventually disagree.
  */
 export function EffectivePermissionsCard({ userId }: { userId: string }) {
   const t = useTranslations("Users.access.effective");
@@ -68,7 +67,6 @@ export function EffectivePermissionsCard({ userId }: { userId: string }) {
                 <span className="font-medium">
                   {ta(rule.action)} · {ts(rule.subject)}
                 </span>
-                {rule.inverted ? <Badge variant="destructive">{t("denied")}</Badge> : null}
                 {rule.fields?.length ? (
                   <Badge variant="outline" dir="ltr">
                     {rule.fields.join(", ")}
@@ -87,8 +85,6 @@ export function EffectivePermissionsCard({ userId }: { userId: string }) {
                   </pre>
                 </>
               ) : null}
-
-              {rule.reason ? <p className="text-muted-foreground text-xs">{rule.reason}</p> : null}
             </div>
           ))
         )}

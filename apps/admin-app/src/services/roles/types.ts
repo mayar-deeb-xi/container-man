@@ -36,8 +36,6 @@ export interface RoleRule {
   subject: AppSubject;
   conditions: Record<string, unknown> | null;
   fields: string[] | null;
-  inverted: boolean;
-  reason: string | null;
 }
 
 /** A single role with everything it grants — what the matrix editor loads. */
@@ -71,8 +69,6 @@ export interface RulePayload {
   subject: AppSubject;
   conditions?: Record<string, unknown> | null;
   fields?: string[] | null;
-  inverted?: boolean;
-  reason?: string | null;
 }
 
 export interface CreateRolePayload {

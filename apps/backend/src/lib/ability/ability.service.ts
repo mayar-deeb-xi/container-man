@@ -64,8 +64,6 @@ export class AbilityService {
         subject: permissions.subject,
         conditions: rolePermissions.conditions,
         fields: rolePermissions.fields,
-        inverted: rolePermissions.inverted,
-        reason: rolePermissions.reason,
       })
       .from(userRoles)
       .innerJoin(roles, eq(roles.id, userRoles.roleId))
@@ -92,31 +90,18 @@ export class AbilityService {
         subject: row.subject,
         conditions: row.conditions,
         fields: row.fields,
-        inverted: row.inverted ?? false,
-        reason: row.reason,
       });
     }
 
     const context: RuleContext = { user: { id: user.id, email: user.email } };
 
-    // Denies last, and this is load-bearing. CASL resolves overlapping rules by order —
-    // the *last* matching rule wins, not the inverted one — so with the rows in whatever
-    // order the join returned, a user holding both a role that grants `delete Container`
-    // and one that forbids it would get whichever the planner happened to emit last.
-    // Sorting the inverted rules to the end makes a deny beat every allow it overlaps,
-    // which is what every comment about inverted rules in this codebase assumes, and what
-    // lets a restriction be expressed as one extra role rather than by editing the others.
-    //
-    // A stable sort, so rules that share an `inverted` value keep their relative order:
-    // among denies, or among allows, precedence is not something an operator can see or
-    // control, and it must not silently depend on row order either.
-    const ordered = [...stored].sort(
-      (a, b) => Number(a.inverted ?? false) - Number(b.inverted ?? false),
-    );
-
+    // Rule order carries no meaning: every rule is a grant, so overlapping rules only
+    // ever widen each other and CASL's last-match precedence never decides anything.
+    // That is a consequence of the deny feature being removed — were inverted rules to
+    // return, they would have to be sorted last here to beat the allows they overlap.
     return {
       roles: [...roleById.values()].sort((a, b) => a.name.localeCompare(b.name)),
-      rules: packRules(ordered, context),
+      rules: packRules(stored, context),
     };
   }
 

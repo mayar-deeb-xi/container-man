@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import {
@@ -50,6 +51,8 @@ interface ContainerRow extends Container {
 
 @Injectable()
 export class ContainersService {
+  private readonly logger = new Logger(ContainersService.name);
+
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /**
@@ -60,11 +63,11 @@ export class ContainersService {
    * number. The number is unique among live rows, so it is also a stable paging key with
    * no tiebreaker needed.
    *
-   * The caller's rules are pushed into the query where they translate and re-checked per row
-   * regardless, so `total` is the number of boxes the caller can actually see. It over-counts
-   * only when a rule cannot be expressed in SQL — a deny, or an operator with no faithful
-   * equivalent — in which case the surplus rows are dropped from the page after the fact, as
-   * they always were. Showing a box a rule forbids would be the worse failure than a short page.
+   * The caller's rules are compiled into the query — exactly, or `abilityWhere` throws;
+   * every storable rule compiles because rule writes are validated with the same
+   * translation. `total` is therefore the number of boxes the caller can actually see,
+   * and a page comes back full. The per-row re-check below is a canary, not enforcement:
+   * it should never remove a row, and logs loudly if it ever does.
    */
   async list(
     query: ListContainersDto,
@@ -80,10 +83,8 @@ export class ContainersService {
 
     const where = and(
       isNull(containers.deletedAt),
-      // What the caller's own `read Container` rules allow, as SQL where they can be
-      // expressed that way. The per-row check below still decides — see `abilityWhere` for
-      // why it is only ever allowed to under-restrict — but with the conditions in the query
-      // `total` counts what the caller can actually see and a page comes back full.
+      // The caller's `read Container` conditions, compiled into SQL — exactly, or not at
+      // all. See `abilityWhere`.
       abilityWhere(ability, "read", "Container", getTableColumns(containers)),
       status ? eq(containers.status, status) : undefined,
       type ? eq(containers.type, type) : undefined,
@@ -128,7 +129,16 @@ export class ContainersService {
       this.db.select({ total: count() }).from(containers).where(where),
     ]);
 
+    // The canary: `abilityWhere` compiled these rules exactly, so this filter must keep
+    // every row. A row cut here means the SQL and in-memory evaluators disagreed — a
+    // translator bug — so the mismatch is logged as an error while the caller still gets
+    // the safe (filtered) answer.
     const visible = rows.filter((row) => ability.can("read", asSubject("Container", row)));
+    if (visible.length !== rows.length) {
+      this.logger.error(
+        `ability push-down disagreed with the in-memory evaluator: ${rows.length - visible.length} of ${rows.length} container rows were cut after fetch`,
+      );
+    }
 
     return {
       data: visible.map((row) => this.toEntity(row)),
@@ -389,14 +399,11 @@ export class ContainersService {
    *
    * The route guard only established that the caller may update *some* container — it had
    * no row to match a rule's conditions against, so this is where "only the boxes assigned
-   * to you" actually takes effect. The refusal carries the rule's own reason when it has
-   * one; an inverted rule exists to explain itself.
+   * to you" actually takes effect.
    */
   private assertAllowed(ability: AppAbility, action: "update" | "delete", row: ContainerRow): void {
-    const subject = asSubject("Container", row);
-    if (ability.can(action, subject)) return;
-
-    const rule = ability.relevantRuleFor(action, subject);
-    throw new ForbiddenException(rule?.reason ?? "Insufficient permissions for this container");
+    if (!ability.can(action, asSubject("Container", row))) {
+      throw new ForbiddenException("Insufficient permissions for this container");
+    }
   }
 }

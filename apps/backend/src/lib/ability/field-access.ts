@@ -1,7 +1,7 @@
 import { ForbiddenException } from "@nestjs/common";
 
 import type { AppAbility, AppSubjectInstance } from "@repo/access";
-import { FIELD_SCOPED_ACTION, forbiddenFields } from "@repo/access";
+import { forbiddenFields } from "@repo/access";
 
 /**
  * The keys a PATCH body actually carries.
@@ -39,13 +39,7 @@ export function assertFieldsAllowed(
   const forbidden = forbiddenFields(ability, subject, fields);
   if (forbidden.length === 0) return;
 
-  // An inverted rule carries its own explanation, and the first refused field is the one
-  // to ask about — a rule that says "never the assignee" should say so rather than be
-  // reported as a list of column names the operator has to map back to a rule themselves.
-  const [first] = forbidden;
-  const rule = first ? ability.relevantRuleFor(FIELD_SCOPED_ACTION, subject, first) : null;
-
   throw new ForbiddenException(
-    rule?.reason ?? `Your permissions do not cover these fields: ${forbidden.join(", ")}`,
+    `Your permissions do not cover these fields: ${forbidden.join(", ")}`,
   );
 }

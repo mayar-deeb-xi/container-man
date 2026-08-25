@@ -18,8 +18,6 @@ export interface RuleDraft {
   conditionsText: string;
   /** Comma-separated field list. Empty means the whole subject. */
   fieldsText: string;
-  inverted: boolean;
-  reason: string;
 }
 
 export type DraftMap = Record<string, RuleDraft>;
@@ -28,8 +26,6 @@ export const emptyDraft: RuleDraft = {
   granted: false,
   conditionsText: "",
   fieldsText: "",
-  inverted: false,
-  reason: "",
 };
 
 /** The catalog, arranged the way the matrix is drawn: one row per subject. */
@@ -68,8 +64,6 @@ export function draftsFromRules(rules: RoleRule[]): DraftMap {
       // read and edit, not in a payload.
       conditionsText: rule.conditions ? JSON.stringify(rule.conditions, null, 2) : "",
       fieldsText: rule.fields?.join(", ") ?? "",
-      inverted: rule.inverted,
-      reason: rule.reason ?? "",
     };
   }
 
@@ -121,7 +115,7 @@ export function toggleField(draft: RuleDraft, subject: AppResourceSubject, field
 
 /** True when a draft carries anything beyond the bare grant — what the UI badges. */
 export function isDetailed(draft: RuleDraft): boolean {
-  return Boolean(draft.conditionsText.trim() || draft.fieldsText.trim() || draft.inverted);
+  return Boolean(draft.conditionsText.trim() || draft.fieldsText.trim());
 }
 
 export interface BuildResult {
@@ -178,8 +172,6 @@ export function buildRules(
       subject: entry.subject,
       conditions,
       fields: fields.length > 0 ? fields : null,
-      inverted: draft.inverted,
-      reason: draft.reason.trim() || null,
     });
   }
 
@@ -205,9 +197,7 @@ export function isDirty(drafts: DraftMap, original: DraftMap, catalog: Permissio
     return (
       a.granted !== b.granted ||
       a.conditionsText.trim() !== b.conditionsText.trim() ||
-      a.fieldsText.trim() !== b.fieldsText.trim() ||
-      a.inverted !== b.inverted ||
-      a.reason.trim() !== b.reason.trim()
+      a.fieldsText.trim() !== b.fieldsText.trim()
     );
   });
 }

@@ -17,7 +17,13 @@ export function escapeLike(term: string): string {
 
 /** Postgres' unique_violation. Reached only when a concurrent insert wins the race. */
 export function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" && error !== null && (error as { code?: string }).code === "23505"
-  );
+  if (typeof error !== "object" || error === null) return false;
+
+  const candidate = error as { code?: string; cause?: unknown };
+  if (candidate.code === "23505") return true;
+
+  // Drizzle wraps driver errors in a DrizzleQueryError whose `cause` holds the actual
+  // PostgresError — checking only the top level would let a duplicate key surface as a
+  // 500 instead of the 409 every call site here promises.
+  return candidate.cause !== undefined && isUniqueViolation(candidate.cause);
 }

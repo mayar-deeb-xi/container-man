@@ -17,8 +17,6 @@ export class RoleRuleEntity {
   @Expose() subject: AppSubject;
   @Expose() conditions: Record<string, unknown> | null;
   @Expose() fields: string[] | null;
-  @Expose() inverted: boolean;
-  @Expose() reason: string | null;
 }
 
 /**

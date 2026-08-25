@@ -1,7 +1,7 @@
 import type { ForcedSubject, MongoAbility } from "@casl/ability";
 import { buildMongoQueryMatcher, createMongoAbility, subject as tagSubject } from "@casl/ability";
-import { and, nor, not, or } from "@ucast/js";
-import { $and, $nor, $not, $or } from "@ucast/mongo";
+import { and, or } from "@ucast/js";
+import { $and, $or } from "@ucast/mongo";
 
 import type { AppRule } from "./rules";
 import type { AppAction, AppSubject } from "./vocabulary";
@@ -29,22 +29,23 @@ export type AppSubjects = AppSubject | AppSubjectInstance;
 export type AppAbility = MongoAbility<[AppAction, AppSubjects]>;
 
 /**
- * The condition evaluator, with MongoDB's logical operators added back.
+ * The condition evaluator, with MongoDB's `$and` and `$or` added back.
  *
  * CASL's default matcher understands the comparison operators and nothing else — and it
  * does not complain about the rest: a condition of `{ $or: [...] }` parses as a comparison
  * against a field literally named `$or`, matches no row, and so revokes the grant it was
  * meant to widen. Silently, which is the worst way for a permission to fail.
  *
- * Registering the four logical instructions is what makes the operator list the API
- * validates writes against actually true, and it buys the conditions this domain wants:
- * "assigned to me, or not assigned to anyone" is one rule rather than an argument about
- * which of two roles a person should hold.
+ * Only the two. `$nor` and `$not` are negation, which `abilityWhere` cannot compile into
+ * SQL exactly, so the API refuses to store them — registering them here would make a
+ * condition evaluate in memory that the list queries would then refuse to run. The
+ * operator set the writes validate, this matcher evaluates, and the translator compiles
+ * must stay one set.
  *
  * `and` is already among CASL's interpreters — several keys in one condition object are an
  * implicit AND — so for that one only the parsing instruction was missing.
  */
-const conditionsMatcher = buildMongoQueryMatcher({ $and, $or, $nor, $not }, { and, or, nor, not });
+const conditionsMatcher = buildMongoQueryMatcher({ $and, $or }, { and, or });
 
 /**
  * Builds an ability from already-resolved rules.

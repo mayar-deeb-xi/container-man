@@ -5,7 +5,7 @@ import { ChevronDown, Loader2, Lock, RotateCcw, Save } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
-import type { AppAction, AppSubject, ConditionPlaceholder } from "@repo/access";
+import type { AppAction, AppSubject } from "@repo/access";
 import { ACTIONS, permissionKey, WRITABLE_FIELDS } from "@repo/access";
 import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
@@ -15,7 +15,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@repo/ui/components/collapsible";
-import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import {
   Table,
@@ -33,6 +32,7 @@ import type { RoleDetail } from "~/services/roles/types";
 import { useFieldAccess } from "~/components/providers/ability-provider";
 import { getApiErrorMessage } from "~/lib/axios";
 import { useSetRolePermissions } from "~/services/roles/use-set-role-permissions";
+import { ConditionBuilder, useConditionDescriber } from "./condition-builder";
 import {
   acceptsFields,
   buildMatrix,
@@ -47,24 +47,25 @@ import {
 } from "../_lib/matrix";
 
 /**
- * Spells a placeholder the way it is typed into a condition.
+ * What a closed rule row reports: the condition — in the builder's plain words when it
+ * can speak it, as one-line JSON when it cannot — then the chosen fields. Null for a
+ * bare grant.
  *
- * Takes a `ConditionPlaceholder` rather than a string, so the hint can only advertise a
- * placeholder the API actually resolves — removing one from `@repo/access` breaks this
- * line rather than leaving the console recommending it.
+ * This is what lets the rows stay folded. The question a reader brings to the list is
+ * "how is this grant narrowed?", and a header that answers it makes opening a row an
+ * editing gesture rather than a reading one.
  */
-function token(name: ConditionPlaceholder): string {
-  return "${" + name + "}";
-}
+function summarize(draft: RuleDraft, conditions: string | null): string | null {
+  const parts: string[] = [];
 
-/**
- * A sample condition, in code rather than in the message catalogue.
- *
- * ICU MessageFormat reads `{` as the start of an argument, so a JSON sample cannot live
- * in a translation without escaping every brace — and being code, it would be the same
- * sample in every language anyway.
- */
-const CONDITIONS_EXAMPLE = '{ "assignedToId": "' + token("user.id") + '" }';
+  const text = draft.conditionsText.trim();
+  if (text) parts.push(conditions ?? text.replace(/\s+/g, " "));
+
+  const fields = selectedFields(draft);
+  if (fields.length > 0) parts.push(fields.join(", "));
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
 
 /**
  * The permission editor: every action against every subject, as one grid.
@@ -99,23 +100,11 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   /**
-   * The per-rule editor is closed until asked for.
+   * Which per-rule editors are expanded, held here rather than left to each `Collapsible`.
    *
-   * Granting a permission is the common errand and the grid answers it on its own; deciding
-   * whether that grant should be narrowed by a Mongo-style query is not something to put in
-   * front of someone who came to tick a box. Closed by default, and the header still reports
-   * what is inside — so nothing is hidden, only folded.
-   */
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
-  /**
-   * Which per-rule panels are expanded, held here rather than left to each `Collapsible`.
-   *
-   * Two reasons. Folding the section unmounts its content, so uncontrolled panels would
-   * silently reset every time it closed — reopening to find your place lost. And a save that
-   * fails on a condition has to be able to *open* the panel holding it: unfolding the section
-   * alone leaves an `Invalid` badge and no visible reason, which is the same hunt as before
-   * with an extra click.
+   * Controlled so a save that fails on a condition can *open* the row holding it. An
+   * `Invalid` badge on a closed row names the victim but not the reason — the message
+   * explaining what is wrong lives inside.
    */
   const [openCells, setOpenCells] = useState<string[]>([]);
 
@@ -156,7 +145,6 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
       setErrors(found);
       // Opened down to the cell that failed. "Some rules could not be saved" is not
       // actionable while the message explaining which, and why, is folded away.
-      setDetailsOpen(true);
       setOpenCells((current) => [...new Set([...current, ...Object.keys(found)])]);
       toast.error(t("fixErrors"));
       return;
@@ -170,14 +158,31 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
     }
   }
 
-  /** The rules with something to configure — the only ones worth a details panel. */
-  const grantedCells = catalog.filter(
-    (entry) => draftFor(drafts, entry.action, entry.subject).granted,
+  const describeConditions = useConditionDescriber();
+
+  /**
+   * The rules with something to configure — the only ones worth an editor row. Walked in
+   * the grid's own order (subjects as rowed, verbs as columned) rather than the catalog's,
+   * so the list below reads as the checked cells above, top to bottom.
+   */
+  const grantedCells = matrix.flatMap((row) =>
+    ACTIONS.flatMap((action) => {
+      const entry = row.cells.get(action);
+      if (!entry) return [];
+      const draft = draftFor(drafts, action, row.subject);
+      if (!draft.granted) return [];
+      // The API refuses conditions and fields alike on an `all` rule, so a bare wildcard
+      // grant has nothing an editor row could offer. One that *does* still carry legacy
+      // details keeps its row — the stored JSON should be seen and cleared, not silently
+      // resubmitted to be refused.
+      if (row.subject === "all" && !isDetailed(draft)) return [];
+      return [entry];
+    }),
   );
 
-  // What the folded header reports: how many grants are narrowed, and whether any of them is
-  // currently unparseable. Both are counted from the drafts, so they follow an edit rather
-  // than what was last saved.
+  // What the section header reports: how many grants are narrowed, and whether any of them
+  // is currently unparseable. Both are counted from the drafts, so they follow an edit
+  // rather than what was last saved.
   const narrowedCount = grantedCells.filter((entry) =>
     isDetailed(draftFor(drafts, entry.action, entry.subject)),
   ).length;
@@ -257,16 +262,10 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
                               update(action, row.subject, { granted: checked === true })
                             }
                           />
-                          {/* A denial is a rule, so it renders as a checked box — which
-                              would read as "allowed" with nothing to correct it once the
-                              details panel is hidden. The marker is what keeps the grid
-                              honest: red for a denial, and a dot for a rule narrowed by
-                              conditions or fields. */}
-                          {draft.granted && draft.inverted ? (
-                            <span className="text-destructive text-[10px] font-medium">
-                              {t("deny")}
-                            </span>
-                          ) : draft.granted && isDetailed(draft) ? (
+                          {/* A rule narrowed by conditions or fields still renders as a
+                              plain checked box, so the dot is what keeps the grid honest
+                              once the details panel is folded away. */}
+                          {draft.granted && isDetailed(draft) ? (
                             <span
                               className="bg-primary size-1.5 rounded-full"
                               title={t("hasDetails")}
@@ -287,26 +286,28 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
       </div>
 
       {grantedCells.length > 0 ? (
-        <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen} className="rounded-xl border">
-          <CollapsibleTrigger className="flex w-full items-start gap-2 p-3 text-start [&[data-state=open]>svg]:rotate-180">
-            <ChevronDown className="text-muted-foreground mt-0.5 size-4 shrink-0 transition-transform" />
-            <div className="flex-1">
-              {/* A span, not a heading: this is the content of a button, which may only hold
-                  phrasing content. */}
-              <span className="text-sm font-medium">{t("detailsTitle")}</span>
+        // A plain section, deliberately not a collapsible. Folded away it buried every
+        // editor two clicks deep and hid even the list's existence; what earns the space
+        // back is each row below folding on its own, down to a one-line summary.
+        <section className="rounded-xl border">
+          <div className="flex flex-wrap items-center gap-2 border-b p-3">
+            <div className="min-w-48 flex-1">
+              <h2 className="text-sm font-medium">{t("detailsTitle")}</h2>
               <p className="text-muted-foreground text-xs">{t("detailsDescription")}</p>
             </div>
-            {/* Counted while closed so folding never hides that a rule is narrowed. The
+            {/* The section's one-glance answer to "is anything here worth reading?". The
                 tooltip is what says which three things count as narrowing. */}
             {narrowedCount > 0 ? (
               <Badge variant="secondary" title={t("hasDetails")}>
-                {narrowedCount}
+                {t("narrowedCount", { count: narrowedCount })}
               </Badge>
             ) : null}
-            {errorCount > 0 ? <Badge variant="destructive">{t("invalid")}</Badge> : null}
-          </CollapsibleTrigger>
+            {errorCount > 0 ? (
+              <Badge variant="destructive">{t("invalidCount", { count: errorCount })}</Badge>
+            ) : null}
+          </div>
 
-          <CollapsibleContent className="flex flex-col gap-2 border-t p-3">
+          <div className="flex flex-col gap-2 p-3">
             {grantedCells.map((entry) => {
               const key = permissionKey(entry.action, entry.subject);
               const draft = draftFor(drafts, entry.action, entry.subject);
@@ -318,6 +319,11 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
                 ? entry.subject
                 : null;
 
+              const summary = summarize(
+                draft,
+                describeConditions(entry.subject, draft.conditionsText),
+              );
+
               return (
                 <Collapsible
                   key={key}
@@ -325,12 +331,28 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
                   onOpenChange={(open) => toggleCell(key, open)}
                   className="rounded-lg border"
                 >
-                  <CollapsibleTrigger className="flex w-full items-center gap-2 p-3 text-sm [&[data-state=open]>svg]:rotate-180">
-                    <ChevronDown className="text-muted-foreground size-4 transition-transform" />
-                    <span className="font-medium">
+                  <CollapsibleTrigger className="group flex w-full items-center gap-2 p-3 text-sm [&[data-state=open]>svg]:rotate-180">
+                    <ChevronDown className="text-muted-foreground size-4 shrink-0 transition-transform" />
+                    <span className="font-medium whitespace-nowrap">
                       {ta(entry.action)} · {ts(entry.subject)}
                     </span>
-                    {draft.inverted ? <Badge variant="destructive">{t("deny")}</Badge> : null}
+                    {/* The closed row's answer to "narrowed how?". Redundant beside the
+                        open editors, so it only shows while folded — `invisible` rather
+                        than hidden, to keep the badges from shifting as rows open. */}
+                    {summary ? (
+                      // `auto` because the content varies: a translated sentence in the
+                      // page's language, or raw JSON when only that can say it.
+                      <span
+                        dir="auto"
+                        className="text-muted-foreground min-w-0 flex-1 truncate text-start text-xs group-data-[state=open]:invisible"
+                      >
+                        {summary}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground/60 min-w-0 flex-1 truncate text-start text-xs group-data-[state=open]:invisible">
+                        {t("unrestricted")}
+                      </span>
+                    )}
                     {draft.conditionsText.trim() ? (
                       <Badge variant="secondary">{t("conditional")}</Badge>
                     ) : null}
@@ -341,34 +363,42 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="flex flex-col gap-4 border-t p-3">
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor={`${key}-conditions`}>{t("conditions")}</Label>
-                      {/* JSON is not localised text, and the placeholders inside it are
-                        identifiers — LTR even in a right-to-left layout. */}
-                      <Textarea
-                        id={`${key}-conditions`}
-                        dir="ltr"
-                        rows={3}
-                        className="font-mono text-xs"
-                        placeholder={CONDITIONS_EXAMPLE}
-                        disabled={!canEdit}
+                    {entry.subject !== "all" ? (
+                      <ConditionBuilder
+                        subject={entry.subject}
+                        cellKey={key}
                         value={draft.conditionsText}
-                        onChange={(event) =>
-                          update(entry.action, entry.subject, {
-                            conditionsText: event.target.value,
-                          })
+                        disabled={!canEdit}
+                        error={errors[key]}
+                        onChange={(text) =>
+                          update(entry.action, entry.subject, { conditionsText: text })
                         }
                       />
-                      <p className="text-muted-foreground text-xs">
-                        {t("conditionsHint", {
-                          userId: token("user.id"),
-                          userEmail: token("user.email"),
-                        })}
-                      </p>
-                      {errors[key] ? (
-                        <p className="text-destructive text-xs">{errors[key]}</p>
-                      ) : null}
-                    </div>
+                    ) : (
+                      // A wildcard rule cannot carry conditions any more; this branch only
+                      // renders while a legacy one still does. Shown as JSON so it can be
+                      // read and cleared — saving it unchanged would be refused anyway.
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor={`${key}-conditions`}>{t("conditions")}</Label>
+                        <p className="text-destructive text-xs">{t("allNoConditions")}</p>
+                        <Textarea
+                          id={`${key}-conditions`}
+                          dir="ltr"
+                          rows={3}
+                          className="font-mono text-xs"
+                          disabled={!canEdit}
+                          value={draft.conditionsText}
+                          onChange={(event) =>
+                            update(entry.action, entry.subject, {
+                              conditionsText: event.target.value,
+                            })
+                          }
+                        />
+                        {errors[key] ? (
+                          <p className="text-destructive text-xs">{errors[key]}</p>
+                        ) : null}
+                      </div>
+                    )}
 
                     {/* Only on an update rule: no other action is field-checked, so the
                       control is absent rather than disabled — see `acceptsFields`. */}
@@ -409,47 +439,19 @@ export function PermissionMatrix({ role, catalog }: { role: RoleDetail; catalog:
                         </p>
                       </div>
                     ) : null}
-
-                    <div className="flex items-start gap-2">
-                      <Checkbox
-                        id={`${key}-inverted`}
-                        checked={draft.inverted}
-                        disabled={!canEdit}
-                        onCheckedChange={(checked) =>
-                          update(entry.action, entry.subject, { inverted: checked === true })
-                        }
-                      />
-                      <div className="grid gap-1 leading-none">
-                        <Label htmlFor={`${key}-inverted`}>{t("inverted")}</Label>
-                        <p className="text-muted-foreground text-xs">{t("invertedHint")}</p>
-                      </div>
-                    </div>
-
-                    {draft.inverted ? (
-                      <div className="flex flex-col gap-1.5">
-                        <Label htmlFor={`${key}-reason`}>{t("reason")}</Label>
-                        <Input
-                          id={`${key}-reason`}
-                          placeholder={t("reasonPlaceholder")}
-                          disabled={!canEdit}
-                          value={draft.reason}
-                          onChange={(event) =>
-                            update(entry.action, entry.subject, { reason: event.target.value })
-                          }
-                        />
-                        <p className="text-muted-foreground text-xs">{t("reasonHint")}</p>
-                      </div>
-                    ) : null}
                   </CollapsibleContent>
                 </Collapsible>
               );
             })}
-          </CollapsibleContent>
-        </Collapsible>
+          </div>
+        </section>
       ) : null}
 
       {canEdit ? (
-        <div className="flex items-center justify-end gap-2">
+        // Sticks to the viewport bottom so a long details list never scrolls Save out of
+        // reach — and the dirty notice rides along, answering "did I save?" from anywhere
+        // on the page.
+        <div className="bg-background sticky bottom-0 flex items-center justify-end gap-2 border-t py-3">
           <p className="text-muted-foreground me-auto text-sm" aria-live="polite">
             {dirty ? t("unsaved") : t("upToDate")}
           </p>

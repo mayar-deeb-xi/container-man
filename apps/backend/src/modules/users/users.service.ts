@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import {
@@ -42,6 +43,8 @@ import { RolesService } from "../roles/roles.service";
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly roles: RolesService,
@@ -74,13 +77,12 @@ export class UsersService {
   /**
    * A page of users, filtered by whatever the caller's own `read User` rules allow.
    *
-   * The conditions are pushed into the query where they can be, and every row is still
-   * tested with the same evaluator the guards use — that second pass is what decides, and
-   * `abilityWhere` is only ever permitted to under-restrict, so the two cannot disagree in
-   * the direction that would show a row a rule forbids. `total` therefore counts what the
-   * caller can see, except where a rule does not translate (a deny, or an operator with no
-   * faithful SQL equivalent), which leaves the over-count this list used to have in every
-   * conditional case.
+   * The caller's conditions are compiled into the query — exactly, or `abilityWhere`
+   * throws; every storable rule compiles because rule writes are validated with the same
+   * translation. `total` therefore counts what the caller can see, and a page comes back
+   * full. The per-row re-check below is a canary, not enforcement: it should never
+   * remove a row, and logs loudly if it ever does, because a disagreement between the
+   * two evaluators is a translator bug in whichever direction it points.
    */
   async list(query: ListUsersDto, ability: AppAbility): Promise<BaseResponse<UserEntity[]>> {
     const { skip, take, search, roleKey } = query;
@@ -88,8 +90,8 @@ export class UsersService {
     const term = search ? `%${escapeLike(search)}%` : undefined;
     const where = and(
       isNull(users.deletedAt),
-      // The caller's `read User` conditions, in SQL where they translate — so `total` and the
-      // page agree with what the row filter below leaves behind. See `abilityWhere`.
+      // The caller's `read User` conditions, compiled into SQL — exactly, or not at all.
+      // See `abilityWhere`.
       abilityWhere(ability, "read", "User", getTableColumns(users)),
       term ? or(ilike(users.email, term), ilike(users.name, term)) : undefined,
       // `exists` rather than a join: a user with three roles must still be one row, and
@@ -123,10 +125,20 @@ export class UsersService {
       this.db.select({ total: count() }).from(users).where(where),
     ]);
 
+    // The canary: `abilityWhere` compiled these rules exactly, so this filter must keep
+    // every row. A row cut here means the SQL and in-memory evaluators disagreed — a
+    // translator bug — so the mismatch is logged as an error while the caller still gets
+    // the safe (filtered) answer.
+    const visible = rows.filter((row) => ability.can("read", asSubject("User", row)));
+    if (visible.length !== rows.length) {
+      this.logger.error(
+        `ability push-down disagreed with the in-memory evaluator: ${rows.length - visible.length} of ${rows.length} user rows were cut after fetch`,
+      );
+    }
+
     // One extra query for the whole page rather than one per row: the roles cannot be
     // selected alongside the users without multiplying the rows, and N+1 here would be
     // N+1 on the console's busiest screen.
-    const visible = rows.filter((row) => ability.can("read", asSubject("User", row)));
     const rolesByUser = await this.roles.forUsers(visible.map((row) => row.id));
 
     return {
@@ -353,8 +365,8 @@ export class UsersService {
    * The rules a user's roles resolve to — the effective-permissions view.
    *
    * Computed by the same service the guards use, so what the console shows is what the
-   * API will actually enforce, placeholders and inverted rules included. A second
-   * implementation here would be a second answer to the same question.
+   * API will actually enforce, placeholders included. A second implementation here
+   * would be a second answer to the same question.
    */
   async rulesOf(id: string): Promise<BaseResponse<AppRule[]>> {
     const access = await this.abilities.forUser(id);
@@ -408,18 +420,11 @@ export class UsersService {
     }
   }
 
-  /**
-   * Re-checks a write against the row it will touch.
-   *
-   * The refusal carries the rule's own `reason` when it has one: an inverted rule exists
-   * to explain itself, and "insufficient permissions" throws that explanation away at the
-   * one moment it would have helped.
-   */
+  /** Re-checks a write against the row it will touch. */
   private assertAllowed(ability: AppAbility, action: "update" | "delete", user: User): void {
-    if (ability.can(action, asSubject("User", user))) return;
-
-    const rule = ability.relevantRuleFor(action, asSubject("User", user));
-    throw new ForbiddenException(rule?.reason ?? "Insufficient permissions for this user");
+    if (!ability.can(action, asSubject("User", user))) {
+      throw new ForbiddenException("Insufficient permissions for this user");
+    }
   }
 
   /** The role a new account gets when none was named. */

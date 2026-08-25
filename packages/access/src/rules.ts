@@ -7,6 +7,12 @@ import type { AppAction, AppSubject } from "./vocabulary";
  * translated: a `role_permissions` row, the JSON on the wire, and what
  * `createAppAbility` consumes are all the same object, so there is no mapper in
  * the middle to disagree with itself.
+ *
+ * Every rule is a grant. CASL's `inverted` (deny) rules are deliberately not part of
+ * this system: a deny cannot be compiled into a list query's WHERE clause without
+ * negation, and negation is the one operation whose translation errors hide rows —
+ * see `abilityWhere` in the backend. Access is only ever *granted*, conditionally;
+ * "everything except X" is written as a positive condition over the allowed values.
  */
 export interface AppRule {
   action: AppAction;
@@ -27,16 +33,6 @@ export interface AppRule {
    * column: `conditions` is what restricts reading, and it does it by row.
    */
   fields?: string[] | null;
-  /**
-   * A deny rule.
-   *
-   * Precedence over an overlapping allow depends on order — CASL takes the last matching
-   * rule — so whoever assembles the array puts the inverted ones last. `AbilityService`
-   * does; a caller that builds rules by hand has to.
-   */
-  inverted?: boolean;
-  /** Shown to the user when an inverted rule is what refused them. */
-  reason?: string | null;
 }
 
 /** The variables a condition placeholder may reference. */
@@ -166,8 +162,6 @@ export function packRule(rule: AppRule, context: RuleContext): AppRule | null {
   }
 
   if (rule.fields && rule.fields.length > 0) packed.fields = rule.fields;
-  if (rule.inverted) packed.inverted = true;
-  if (rule.reason) packed.reason = rule.reason;
 
   return packed;
 }

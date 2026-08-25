@@ -2,7 +2,6 @@ import { Transform } from "class-transformer";
 import {
   ArrayMaxSize,
   IsArray,
-  IsBoolean,
   IsIn,
   IsObject,
   IsOptional,
@@ -13,55 +12,42 @@ import {
   ValidationOptions,
 } from "class-validator";
 
-import type { AppResourceSubject } from "@repo/access";
+import type { AppResourceSubject, RuleContext } from "@repo/access";
 import {
   ACTIONS,
   collectPlaceholders,
   CONDITION_PLACEHOLDERS,
   FIELD_SCOPED_ACTION,
+  interpolateConditions,
   isSubject,
   SUBJECTS,
   WRITABLE_FIELDS,
 } from "@repo/access";
 
+import {
+  assertConditionsTranslatable,
+  UntranslatableRuleError,
+} from "../../../lib/ability/ability-where";
+import { CONDITION_COLUMNS } from "../../../lib/ability/condition-columns";
+
 export const MAX_RULE_FIELDS = 50;
 export const MAX_CONDITIONS_BYTES = 4_000;
 export const MAX_CONDITIONS_DEPTH = 6;
-export const REASON_MAX = 200;
 
 /**
- * The MongoDB query operators a stored condition may use.
+ * Stands in for each placeholder while a condition is validated.
  *
- * This list is exactly what `createAppAbility` can evaluate, and keeping the two equal is
- * the whole point. An unsupported operator does not raise when a rule is evaluated — ucast
- * reads `{ $or: [...] }` as a comparison against a field named `$or`, matches nothing, and
- * the role quietly grants less than it says. The only place anyone is watching is the write,
- * so that is where the set is enforced.
- *
- * The four logical operators are here because `@repo/access` registers them with the matcher
- * on purpose; they are not in CASL's default set. `$mod` and `$where` are left out: the
- * first has no use here, and the second evaluates a caller-supplied function.
+ * A condition is validated by *compiling* it — the same translation the list queries run
+ * (`assertConditionsTranslatable`), and that compiler checks values against column types.
+ * A placeholder's stored form is a string like `${user.id}`, which is not the shape it
+ * has at request time, so each is substituted with a value of the type it actually
+ * resolves to: `user.id` is always a UUID, `user.email` never is. That is what refuses
+ * `{ "assignedToId": "${user.email}" }` at the form instead of letting it 500 every list
+ * request of everyone holding the role.
  */
-const ALLOWED_OPERATORS = new Set([
-  "$eq",
-  "$ne",
-  "$lt",
-  "$lte",
-  "$gt",
-  "$gte",
-  "$in",
-  "$nin",
-  "$all",
-  "$size",
-  "$exists",
-  "$regex",
-  "$options",
-  "$elemMatch",
-  "$and",
-  "$or",
-  "$nor",
-  "$not",
-]);
+const REPRESENTATIVE_CONTEXT: RuleContext = {
+  user: { id: "00000000-0000-0000-0000-000000000000", email: "operator@example.com" },
+};
 
 interface ConditionProblem {
   message: string;
@@ -70,13 +56,20 @@ interface ConditionProblem {
 /**
  * Walks a condition tree and reports the first thing wrong with it.
  *
- * The checks are all about failure modes that are invisible once saved: a rule with
- * an unknown placeholder, or an operator CASL does not implement, is not rejected at
- * evaluation time — it simply matches nothing, and the role appears to grant a
- * permission it does not. Rejecting it at the form is the only point where anyone
- * is watching.
+ * The decisive check is the last one: the condition is *compiled*, by the same
+ * translation the list queries run (`assertConditionsTranslatable`), against the same
+ * columns of the same table. A condition this function accepts is therefore one
+ * `abilityWhere` is guaranteed to turn into an exact WHERE clause — the write is the
+ * only point where anyone is watching, and validating with a second implementation
+ * would let the two drift, which would surface as a 500 on a list endpoint months
+ * after the rule was saved.
+ *
+ * The checks before it are the ones the compiler cannot make: bounds that keep a
+ * hostile payload from being walked at all, placeholders (substituted before
+ * compiling, so the compiler sees the value shape each resolves to), and the subject
+ * — conditions need a table to compile against, which the `all` wildcard does not name.
  */
-function inspectConditions(value: unknown): ConditionProblem | null {
+function inspectConditions(value: unknown, rule: Partial<RuleDto>): ConditionProblem | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return { message: "conditions must be a JSON object" };
   }
@@ -85,6 +78,24 @@ function inspectConditions(value: unknown): ConditionProblem | null {
   if (serialized.length > MAX_CONDITIONS_BYTES) {
     return { message: `conditions must be under ${MAX_CONDITIONS_BYTES} characters` };
   }
+
+  const walk = (node: unknown, depth: number): ConditionProblem | null => {
+    if (depth > MAX_CONDITIONS_DEPTH) {
+      return { message: `conditions may not nest deeper than ${MAX_CONDITIONS_DEPTH} levels` };
+    }
+
+    if (Array.isArray(node) || (node && typeof node === "object")) {
+      for (const item of Object.values(node)) {
+        const problem = walk(item, depth + 1);
+        if (problem) return problem;
+      }
+    }
+
+    return null;
+  };
+
+  const tooDeep = walk(value, 1);
+  if (tooDeep) return tooDeep;
 
   const unknownPlaceholder = collectPlaceholders(value).find(
     (name) => !(CONDITION_PLACEHOLDERS as readonly string[]).includes(name),
@@ -97,33 +108,34 @@ function inspectConditions(value: unknown): ConditionProblem | null {
     };
   }
 
-  const walk = (node: unknown, depth: number): ConditionProblem | null => {
-    if (depth > MAX_CONDITIONS_DEPTH) {
-      return { message: `conditions may not nest deeper than ${MAX_CONDITIONS_DEPTH} levels` };
-    }
+  // A malformed subject is its own validator's finding — reporting it against the
+  // conditions too would blame the wrong field.
+  if (!isSubject(rule.subject)) return null;
 
-    if (Array.isArray(node)) {
-      for (const item of node) {
-        const problem = walk(item, depth + 1);
-        if (problem) return problem;
-      }
-      return null;
-    }
+  if (rule.subject === "all") {
+    return {
+      message:
+        'conditions cannot be used on an "all" rule — grant each subject its own conditional rule instead',
+    };
+  }
 
-    if (node && typeof node === "object") {
-      for (const [key, item] of Object.entries(node)) {
-        if (key.startsWith("$") && !ALLOWED_OPERATORS.has(key)) {
-          return { message: `operator ${key} is not supported in conditions` };
-        }
-        const problem = walk(item, depth + 1);
-        if (problem) return problem;
-      }
-    }
+  const interpolated = interpolateConditions(
+    value as Record<string, unknown>,
+    REPRESENTATIVE_CONTEXT,
+  );
+  // Unreachable after the placeholder check above, but a null here must not pass as valid.
+  if (!interpolated) {
+    return { message: "conditions contain a placeholder that cannot be resolved" };
+  }
 
-    return null;
-  };
+  try {
+    assertConditionsTranslatable(interpolated, CONDITION_COLUMNS[rule.subject]);
+  } catch (error) {
+    if (error instanceof UntranslatableRuleError) return { message: error.message };
+    throw error;
+  }
 
-  return walk(value, 1);
+  return null;
 }
 
 /** Validates a rule's `conditions`, reporting *why* rather than just "invalid". */
@@ -135,11 +147,18 @@ export function IsRuleConditions(options?: ValidationOptions) {
       propertyName,
       options,
       validator: {
-        validate(value: unknown) {
-          return value === null || value === undefined || inspectConditions(value) === null;
+        validate(value: unknown, args?: ValidationArguments) {
+          return (
+            value === null ||
+            value === undefined ||
+            inspectConditions(value, (args?.object ?? {}) as Partial<RuleDto>) === null
+          );
         },
         defaultMessage(args: ValidationArguments) {
-          return inspectConditions(args.value)?.message ?? "conditions are invalid";
+          return (
+            inspectConditions(args.value, args.object as Partial<RuleDto>)?.message ??
+            "conditions are invalid"
+          );
         },
       },
     });
@@ -248,13 +267,4 @@ export class RuleDto {
   @IsRuleFields()
   @IsOptional()
   fields?: string[] | null;
-
-  @IsBoolean()
-  @IsOptional()
-  inverted?: boolean;
-
-  @IsString()
-  @MaxLength(REASON_MAX)
-  @IsOptional()
-  reason?: string | null;
 }

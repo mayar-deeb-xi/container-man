@@ -1,26 +1,18 @@
 import { relations } from "drizzle-orm";
-import {
-  boolean,
-  index,
-  jsonb,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { permissions } from "./permissions";
 import { roles } from "./roles";
 
 /**
- * What a role grants — a CASL rule, stored.
+ * What a role grants — a CASL rule, stored. Always a grant: deny (`inverted`) rules
+ * were removed from this system because they cannot be compiled into a list query's
+ * WHERE clause — see `abilityWhere` in the backend and the migration that dropped
+ * the column.
  *
  * The composite primary key means one rule per (role, permission): a matrix cell
- * is either granted or it is not, and a role cannot hold two contradictory rules
- * for the same pair. Overlapping allow/deny for one action on one subject is not
- * something an operator can express usefully, so making it unrepresentable keeps
- * the editor honest.
+ * is either granted or it is not, and a role cannot hold two rules for the same
+ * pair, so making it unrepresentable keeps the editor honest.
  */
 export const rolePermissions = pgTable(
   "role_permissions",
@@ -49,19 +41,6 @@ export const rolePermissions = pgTable(
      * role can grant "may edit the account, may not change what it can do".
      */
     fields: text("fields").array(),
-    /**
-     * A deny rule, and the reason "everything except the admins" is two rows rather than
-     * an enumeration.
-     *
-     * Precedence over an overlapping allow is not something CASL does by itself — it
-     * resolves overlaps by rule order — so `AbilityService.forUser` sorts these last when
-     * it resolves a user's roles. Without that, a user holding one role that grants an
-     * action and another that denies it would get whichever the join happened to return
-     * last.
-     */
-    inverted: boolean("inverted").notNull().default(false),
-    /** Surfaced to the user when an inverted rule is what refused them. */
-    reason: text("reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

@@ -62,10 +62,7 @@ export class AbilityGuard implements CanActivate {
 
     for (const { action, subject } of required) {
       if (!ability.can(action, subject)) {
-        // The rule that refused may carry a reason — an inverted rule exists to
-        // explain itself — so pass it on rather than a flat "forbidden".
-        const rule = ability.relevantRuleFor(action, subject);
-        throw new ForbiddenException(rule?.reason ?? "Insufficient permissions");
+        throw new ForbiddenException("Insufficient permissions");
       }
     }
 

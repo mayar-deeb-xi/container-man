@@ -1,0 +1,12 @@
+{
+  "extends": "@repo/typescript-config/nest.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "rootDir": "./",
+    "noEmit": true,
+    "types": ["node"],
+    "paths": { "@test/*": ["test/*"] }
+  },
+  "include": ["test/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "dist"]
+}
