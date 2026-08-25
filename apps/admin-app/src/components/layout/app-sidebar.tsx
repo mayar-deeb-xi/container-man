@@ -44,7 +44,11 @@ export function AppSidebar({ user }: { user: SessionUser }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
+              <Link href="/dashboard" className="relative overflow-hidden">
+                {/* Oversized watermark of the name behind the brand row. */}
+                <span className="from-primary via-foreground to-primary z-1 rotate-5 opacity-3 bg-linear-to-r absolute -translate-x-3 scale-[13] bg-clip-text text-transparent transition-all duration-300 hover:opacity-5">
+                  {siteName}
+                </span>
                 <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <AppLogo />
                 </div>
