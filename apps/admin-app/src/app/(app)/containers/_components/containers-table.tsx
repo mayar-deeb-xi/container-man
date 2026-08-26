@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,6 +9,7 @@ import {
   Plus,
   Search,
   Snowflake,
+  Trash2,
   TriangleAlert,
 } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
@@ -188,6 +190,17 @@ export function ContainersTable() {
           <TriangleAlert />
           {t("filters.inspectionDue")}
         </Button>
+
+        {/* Behind `delete`, not `read`: the trash page and the API behind it require the
+            delete grant, so anyone the link would 404 on never sees it. */}
+        <Can I="delete" a="Container">
+          <Button variant="outline" asChild>
+            <Link href="/containers/trash">
+              <Trash2 />
+              {t("trash.link")}
+            </Link>
+          </Button>
+        </Can>
 
         <Can I="create" a="Container">
           <Button onClick={openCreate}>

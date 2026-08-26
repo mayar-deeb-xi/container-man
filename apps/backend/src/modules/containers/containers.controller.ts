@@ -25,11 +25,13 @@ import { BaseResponseDTO } from "../../lib/base.dto";
 import { ContainersService } from "./containers.service";
 import { CreateContainerDto } from "./dto/create-container.dto";
 import { ListContainersDto } from "./dto/list-containers.dto";
+import { ListTrashedContainersDto } from "./dto/list-trashed-containers.dto";
 import { UpdateContainerDto } from "./dto/update-container.dto";
-import { ContainerEntity } from "./entities/container.entity";
+import { ContainerEntity, TrashedContainerEntity } from "./entities/container.entity";
 
 /** Hoisted so every route below shares one generated envelope class. */
 const ContainerResponse = BaseResponseDTO(ContainerEntity);
+const TrashedContainerResponse = BaseResponseDTO(TrashedContainerEntity);
 
 /**
  * The container fleet.
@@ -55,6 +57,23 @@ export class ContainersController {
     @CurrentAbility() ability: AppAbility,
   ): Promise<BaseResponse<ContainerEntity[]>> {
     return this.containers.list(query, ability);
+  }
+
+  /**
+   * The trash. Declared before `:id` — Nest matches routes in declaration order, and
+   * `trash` is not a uuid.
+   *
+   * `delete Container` rather than `read`: the trash and restore are two halves of undoing
+   * a mistaken delete, so one grant covers seeing the bin and emptying it back out.
+   */
+  @Get("trash")
+  @RequireAbility({ action: "delete", subject: "Container" })
+  @SerializeOptions({ type: TrashedContainerResponse })
+  async listTrash(
+    @Query() query: ListTrashedContainersDto,
+    @CurrentAbility() ability: AppAbility,
+  ): Promise<BaseResponse<TrashedContainerEntity[]>> {
+    return this.containers.listTrash(query, ability);
   }
 
   @Get(":id")
@@ -97,5 +116,22 @@ export class ContainersController {
     @CurrentAbility() ability: AppAbility,
   ): Promise<void> {
     await this.containers.softDelete(id, ability);
+  }
+
+  /**
+   * Restore from the trash — delete's inverse, behind the same grant.
+   *
+   * Answers 409 when the number was re-entered while the row sat in the trash: the unique
+   * index is partial, so deleting freed it. Returns the restored container so the client
+   * lands with the row rather than refetching to learn what it just brought back.
+   */
+  @Post(":id/restore")
+  @HttpCode(HttpStatus.OK)
+  @RequireAbility({ action: "delete", subject: "Container" })
+  async restore(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentAbility() ability: AppAbility,
+  ): Promise<BaseResponse<ContainerEntity>> {
+    return this.containers.restore(id, ability);
   }
 }

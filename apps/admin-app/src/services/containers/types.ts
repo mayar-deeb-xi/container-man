@@ -48,6 +48,14 @@ export interface Container {
   assignedTo: (Pick<SessionRole, "id"> & { email: string; name: string | null }) | null;
 }
 
+/**
+ * A trash row — the live shape plus the one fact that defines the bin. Only
+ * `/containers/trash` returns this; every live endpoint omits `deletedAt` entirely.
+ */
+export interface TrashedContainer extends Container {
+  deletedAt: string;
+}
+
 /** The `assignedToId` filter value meaning "nobody" — a uuid cannot express absence. */
 export const UNASSIGNED = "unassigned";
 
@@ -68,6 +76,21 @@ export interface ContainersQueryFilters {
 
 export interface ContainersPage {
   containers: Container[];
+  pagination: Pagination;
+}
+
+/**
+ * The trash accepts search and paging only — it answers "where is the row I deleted by
+ * mistake?", not the register's operational questions, and the API refuses the rest.
+ */
+export interface TrashQueryFilters {
+  skip: number;
+  take: number;
+  search?: string;
+}
+
+export interface TrashPage {
+  containers: TrashedContainer[];
   pagination: Pagination;
 }
 

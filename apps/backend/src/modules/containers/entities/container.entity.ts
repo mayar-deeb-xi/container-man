@@ -22,8 +22,9 @@ export class ContainerAssigneeEntity {
  * row — so this list is what decides the wire format, as it does for every other module
  * here. Adding a column is safe by default; exposing it is the deliberate act.
  *
- * `deletedAt` is absent: these endpoints only ever return live rows, so a field that is
- * always null would just invite a client to branch on it.
+ * `deletedAt` is absent: the live-row endpoints never return a row where it is set, so a
+ * field that is always null would just invite a client to branch on it. The trash endpoint
+ * is the one place it means something, and `TrashedContainerEntity` below exposes it there.
  */
 @Exclude()
 export class ContainerEntity {
@@ -84,4 +85,16 @@ export class ContainerEntity {
    * The rule of thumb this encodes: any column a condition may reference has to be exposed.
    */
   @Expose() assignedToId: string | null;
+}
+
+/**
+ * A container as the trash endpoint returns it.
+ *
+ * The one shape where `deletedAt` is a fact rather than an always-null column: every row
+ * here has one, and it is what the trash view sorts and displays by. Typed `Date`, not
+ * `Date | null` — a row without a deletion timestamp has no business in this envelope.
+ */
+@Exclude()
+export class TrashedContainerEntity extends ContainerEntity {
+  @Expose() deletedAt: Date;
 }

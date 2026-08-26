@@ -83,5 +83,9 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
   { action: "read", subject: "Container", description: "View containers" },
   { action: "create", subject: "Container", description: "Create containers" },
   { action: "update", subject: "Container", description: "Edit containers" },
-  { action: "delete", subject: "Container", description: "Delete containers" },
+  {
+    action: "delete",
+    subject: "Container",
+    description: "Delete containers, view the trash, and restore from it",
+  },
 ];

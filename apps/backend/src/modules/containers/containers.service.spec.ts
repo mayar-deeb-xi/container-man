@@ -391,3 +391,95 @@ describe("containers — module behaviour", () => {
     });
   });
 });
+
+describe("containers — trash and restore", () => {
+  const admin = () => ability({ action: "manage", subject: "all" });
+  const deleter = () => ability({ action: "delete", subject: "Container" });
+
+  let liveBox: string;
+  let oldTrash: string;
+  let newTrash: string;
+
+  beforeEach(async () => {
+    await resetDb(db);
+    liveBox = (await createContainer(db, { depot: "Hamburg" })).id;
+    oldTrash = (
+      await createContainer(db, { depot: "Rotterdam", deletedAt: new Date("2026-01-01") })
+    ).id;
+    newTrash = (
+      await createContainer(db, { depot: "Antwerp", deletedAt: new Date("2026-06-01") })
+    ).id;
+  });
+
+  it("lists only deleted rows, newest deletion first, with deletedAt set", async () => {
+    const result = await service.listTrash(LIST_DEFAULTS as never, deleter());
+
+    expect(result.data.map((row) => row.id)).toEqual([newTrash, oldTrash]);
+    expect(result.pagination?.total).toBe(2);
+    for (const row of result.data) expect(row.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it("a conditional delete rule scopes the trash to the caller's own mistakes", async () => {
+    const owner = (await createUser(db)).id;
+    const ownTrashed = (
+      await createContainer(db, { assignedToId: owner, deletedAt: new Date() })
+    ).id;
+
+    const ownOnly = ability({
+      action: "delete",
+      subject: "Container",
+      conditions: { assignedToId: owner },
+    });
+
+    const result = await service.listTrash(LIST_DEFAULTS as never, ownOnly);
+    expect(result.data.map((row) => row.id)).toEqual([ownTrashed]);
+    expect(result.pagination?.total).toBe(1);
+  });
+
+  it("search reaches into the trash the same way it reaches the register", async () => {
+    const result = await service.listTrash(
+      { ...LIST_DEFAULTS, search: "rotterdam" } as never,
+      deleter(),
+    );
+    expect(result.data.map((row) => row.id)).toEqual([oldTrash]);
+  });
+
+  it("restore clears deletedAt and the row is back in every live read", async () => {
+    const restored = await service.restore(oldTrash, deleter());
+    expect(restored.data.id).toBe(oldTrash);
+
+    await expect(service.findOne(oldTrash, admin())).resolves.toMatchObject({
+      data: { id: oldTrash },
+    });
+
+    const trash = await service.listTrash(LIST_DEFAULTS as never, deleter());
+    expect(trash.data.map((row) => row.id)).toEqual([newTrash]);
+  });
+
+  it("refuses to restore onto a number a live box has since taken", async () => {
+    const first = await createContainer(db, {
+      containerNumber: "MSCU1234565",
+      deletedAt: new Date(),
+    });
+    // The partial unique index freed the number, so this re-entry is legitimate…
+    await createContainer(db, { containerNumber: "MSCU1234565" });
+
+    // …and restoring the original would mint a duplicate, so it must refuse.
+    await expect(service.restore(first.id, deleter())).rejects.toThrow(ConflictException);
+  });
+
+  it("restore follows the delete rule's conditions, like the delete it undoes", async () => {
+    const owner = (await createUser(db)).id;
+    const ownOnly = ability({
+      action: "delete",
+      subject: "Container",
+      conditions: { assignedToId: owner },
+    });
+
+    await expect(service.restore(oldTrash, ownOnly)).rejects.toThrow(ForbiddenException);
+  });
+
+  it("a live row is not in the trash: restoring it reports 404", async () => {
+    await expect(service.restore(liveBox, deleter())).rejects.toThrow(NotFoundException);
+  });
+});

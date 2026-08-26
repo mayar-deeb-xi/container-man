@@ -294,6 +294,29 @@
       "success": "{number} wurde gelöscht.",
       "error": "Der Container konnte nicht gelöscht werden. Bitte versuchen Sie es erneut."
     },
+    "trash": {
+      "link": "Papierkorb",
+      "title": "Papierkorb",
+      "back": "Zurück zu den Containern",
+      "description": "Gelöschte Container. Wiederherstellen bringt eine Box zurück in die Flotte — solange ihre Nummer noch frei ist.",
+      "searchPlaceholder": "Nach Nummer, Betreiber oder Depot suchen",
+      "searchLabel": "Papierkorb durchsuchen",
+      "loadError": "Der Papierkorb konnte nicht geladen werden.",
+      "empty": "Der Papierkorb ist leer.",
+      "noResults": "Nichts im Papierkorb passt zu dieser Suche.",
+      "columns": {
+        "number": "Container",
+        "equipment": "Equipment",
+        "location": "Standort",
+        "deletedAt": "Gelöscht",
+        "actions": "Aktionen"
+      },
+      "restore": "Wiederherstellen",
+      "restoring": "Wird wiederhergestellt…",
+      "restoreSuccess": "{number} ist zurück in der Flotte.",
+      "restoreConflict": "Ein aktiver Container trägt jetzt die Nummer {number}. Benennen Sie ihn um oder löschen Sie ihn, bevor Sie diese Box wiederherstellen.",
+      "restoreError": "Der Container konnte nicht wiederhergestellt werden. Bitte versuchen Sie es erneut."
+    },
     "validation": {
       "numberInvalid": "Geben Sie eine gültige ISO-6346-Nummer ein — prüfen Sie die letzte Ziffer",
       "isoTypeCode": "Vier Zeichen, z. B. 22G1",

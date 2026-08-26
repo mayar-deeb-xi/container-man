@@ -11,6 +11,7 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
   getTableColumns,
   ilike,
@@ -31,8 +32,9 @@ import type { BaseResponse } from "../../lib/base.dto";
 import type { Database } from "../../lib/db/db.module";
 import type { CreateContainerDto } from "./dto/create-container.dto";
 import type { ListContainersDto } from "./dto/list-containers.dto";
+import type { ListTrashedContainersDto } from "./dto/list-trashed-containers.dto";
 import type { UpdateContainerDto } from "./dto/update-container.dto";
-import type { ContainerEntity } from "./entities/container.entity";
+import type { ContainerEntity, TrashedContainerEntity } from "./entities/container.entity";
 import { abilityWhere } from "../../lib/ability/ability-where";
 import { assertFieldsAllowed, touchedFields } from "../../lib/ability/field-access";
 import { DRIZZLE } from "../../lib/db/db.module";
@@ -318,6 +320,118 @@ export class ContainersService {
     if (!deleted) throw new NotFoundException("Container not found");
   }
 
+  /**
+   * The trash — soft-deleted rows, newest deletion first.
+   *
+   * Gated by `delete Container` rather than `read`: the trash and restore are two halves of
+   * the same mistake-undoing gesture, so whoever may put a row here may also see and empty
+   * it back out. A conditional delete rule is pushed down the same way `list` pushes down
+   * read rules — someone who may only delete their own boxes sees only their own mistakes.
+   *
+   * Ordered by `deletedAt` rather than by number: the caller is here because of something
+   * that just happened, and the number is not unique among deleted rows anyway. The id
+   * tiebreaks so paging stays stable when two rows fell in the same batch.
+   */
+  async listTrash(
+    query: ListTrashedContainersDto,
+    ability: AppAbility,
+  ): Promise<BaseResponse<TrashedContainerEntity[]>> {
+    const { skip, take, search } = query;
+
+    const term = search ? `%${escapeLike(normalizeContainerNumber(search))}%` : undefined;
+    const rawTerm = search ? `%${escapeLike(search)}%` : undefined;
+
+    const where = and(
+      isNotNull(containers.deletedAt),
+      abilityWhere(ability, "delete", "Container", getTableColumns(containers)),
+      term && rawTerm
+        ? or(
+            ilike(containers.containerNumber, term),
+            ilike(containers.operator, rawTerm),
+            ilike(containers.depot, rawTerm),
+          )
+        : undefined,
+    );
+
+    const [rows, [totals]] = await Promise.all([
+      this.db
+        .select(this.selection())
+        .from(containers)
+        .leftJoin(users, eq(users.id, containers.assignedToId))
+        .where(where)
+        .orderBy(desc(containers.deletedAt), asc(containers.id))
+        .limit(take)
+        .offset(skip),
+      this.db.select({ total: count() }).from(containers).where(where),
+    ]);
+
+    // The same canary as `list`, against the same invariant: the push-down compiled the
+    // caller's delete rules exactly, so this filter must keep every row.
+    const visible = rows.filter((row) => ability.can("delete", asSubject("Container", row)));
+    if (visible.length !== rows.length) {
+      this.logger.error(
+        `ability push-down disagreed with the in-memory evaluator: ${rows.length - visible.length} of ${rows.length} trashed container rows were cut after fetch`,
+      );
+    }
+
+    return {
+      // `deletedAt` is restated rather than trusted to ride along: the entity promises a
+      // `Date`, and the `isNotNull` in the query is what makes the assertion safe.
+      data: visible.map((row) => ({ ...this.toEntity(row), deletedAt: row.deletedAt! })),
+      pagination: { skip, take, total: totals?.total ?? 0 },
+    };
+  }
+
+  /**
+   * Restore — `deleted_at` cleared, the row back in every live read.
+   *
+   * Guarded by the same `delete` ability that put the row in the trash. The wrinkle is the
+   * number: the unique index is partial, so deleting freed it, and someone may have
+   * legitimately re-entered the same box while this row sat here. Checked up front for a
+   * clean 409 the client can phrase; the index still decides the race, because clearing
+   * `deleted_at` puts the row back under the index's watch.
+   */
+  async restore(id: string, ability: AppAbility): Promise<BaseResponse<ContainerEntity>> {
+    const existing = await this.requireTrashedRow(id);
+    this.assertAllowed(ability, "delete", existing);
+
+    const clash = await this.db
+      .select({ id: containers.id })
+      .from(containers)
+      .where(
+        and(eq(containers.containerNumber, existing.containerNumber), isNull(containers.deletedAt)),
+      )
+      .limit(1);
+
+    if (clash.length > 0) {
+      throw new ConflictException(
+        "A live container now holds that number — rename or delete it before restoring this one",
+      );
+    }
+
+    try {
+      const [restored] = await this.db
+        .update(containers)
+        .set({ deletedAt: null })
+        // `isNotNull` for the same reason `softDelete` checks `isNull`: restoring twice, or
+        // restoring a row someone else just restored, reports 404 rather than rewriting a
+        // live row's timestamps.
+        .where(and(eq(containers.id, id), isNotNull(containers.deletedAt)))
+        .returning({ id: containers.id });
+
+      if (!restored) throw new NotFoundException("Container not found in the trash");
+
+      return { data: this.toEntity(await this.requireRow(restored.id)) };
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException(
+          "A live container now holds that number — rename or delete it before restoring this one",
+        );
+      }
+      throw error;
+    }
+  }
+
   /** The columns every read selects, assignee included. */
   private selection() {
     return {
@@ -340,6 +454,19 @@ export class ContainersService {
       .limit(1);
 
     if (!row) throw new NotFoundException("Container not found");
+    return row;
+  }
+
+  /** `requireRow`'s mirror image — the row must be in the trash, not out of it. */
+  private async requireTrashedRow(id: string): Promise<ContainerRow> {
+    const [row] = await this.db
+      .select(this.selection())
+      .from(containers)
+      .leftJoin(users, eq(users.id, containers.assignedToId))
+      .where(and(eq(containers.id, id), isNotNull(containers.deletedAt)))
+      .limit(1);
+
+    if (!row) throw new NotFoundException("Container not found in the trash");
     return row;
   }
 

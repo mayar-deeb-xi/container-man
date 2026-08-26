@@ -294,6 +294,29 @@
       "success": "{number} was deleted.",
       "error": "Could not delete the container. Please try again."
     },
+    "trash": {
+      "link": "Trash",
+      "title": "Trash",
+      "back": "Back to containers",
+      "description": "Deleted containers. Restoring puts a box back in the fleet — as long as its number is still free.",
+      "searchPlaceholder": "Search by number, operator or depot",
+      "searchLabel": "Search the trash",
+      "loadError": "Could not load the trash.",
+      "empty": "The trash is empty.",
+      "noResults": "Nothing in the trash matches this search.",
+      "columns": {
+        "number": "Container",
+        "equipment": "Equipment",
+        "location": "Location",
+        "deletedAt": "Deleted",
+        "actions": "Actions"
+      },
+      "restore": "Restore",
+      "restoring": "Restoring…",
+      "restoreSuccess": "{number} is back in the fleet.",
+      "restoreConflict": "A live container now holds {number}. Rename or delete that one first, then restore this box.",
+      "restoreError": "Could not restore the container. Please try again."
+    },
     "validation": {
       "numberInvalid": "Enter a valid ISO 6346 number — check the last digit",
       "isoTypeCode": "Four characters, e.g. 22G1",
