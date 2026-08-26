@@ -3,14 +3,16 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import type { AppAbility, AppAction, AppSubject } from "@repo/access";
-import type { Database, NewContainer, NewRole, NewUser } from "@repo/db";
+import type { Database, NewContainer, NewDelivery, NewRole, NewSupplier, NewUser } from "@repo/db";
 import { createAppAbility } from "@repo/access";
 import {
   containers,
+  deliveries,
   permissions,
   rolePermissions,
   roles,
   sessions,
+  suppliers,
   userRoles,
   users,
 } from "@repo/db";
@@ -45,7 +47,12 @@ export function connect(): TestConnection {
  * `PERMISSION_CATALOG` seeded once in the global setup, not test data.
  */
 export async function resetDb(db: Database): Promise<void> {
-  await db.execute(sql`truncate table users, roles, containers restart identity cascade`);
+  // `pallets` and `files` ride along via the cascade from `deliveries`, and `restart
+  // identity` rewinds the delivery-number sequence — so references are deterministic
+  // per test. `file_blobs` is named explicitly: it is a bucket, with no fk to cascade.
+  await db.execute(
+    sql`truncate table users, roles, containers, suppliers, deliveries, file_blobs restart identity cascade`,
+  );
 }
 
 let seq = 0;
@@ -138,6 +145,39 @@ export async function createContainer(db: Database, overrides: Partial<NewContai
     })
     .returning();
   if (!row) throw new Error("fixture: container insert returned no row");
+  return row;
+}
+
+export async function createSupplier(db: Database, overrides: Partial<NewSupplier> = {}) {
+  const n = ++seq;
+  const [row] = await db
+    .insert(suppliers)
+    .values({
+      code: `S${String(n).padStart(3, "0")}`,
+      name: `Supplier ${n}`,
+      ...overrides,
+    })
+    .returning();
+  if (!row) throw new Error("fixture: supplier insert returned no row");
+  return row;
+}
+
+/**
+ * A delivery header straight into the table — for read-side setup. Pallets have no
+ * fixture on purpose: the service is their only writer, and tests should hold it to that.
+ */
+export async function createDelivery(
+  db: Database,
+  overrides: Partial<NewDelivery> & { supplierId: string },
+) {
+  const [row] = await db
+    .insert(deliveries)
+    .values({
+      deliveredOn: "2026-08-01",
+      ...overrides,
+    })
+    .returning();
+  if (!row) throw new Error("fixture: delivery insert returned no row");
   return row;
 }
 

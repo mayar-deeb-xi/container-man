@@ -19,7 +19,9 @@
     "containers": "Container",
     "settings": "Einstellungen",
     "support": "Support",
-    "toggleSidebar": "Seitenleiste ein-/ausblenden"
+    "toggleSidebar": "Seitenleiste ein-/ausblenden",
+    "deliveries": "Wareneingang",
+    "suppliers": "Lieferanten"
   },
   "Theme": {
     "toggle": "Design wechseln",
@@ -333,6 +335,346 @@
       "dateInvalid": "Geben Sie ein gültiges Datum ein"
     }
   },
+  "GoodsIn": {
+    "title": "Wareneingang",
+    "description": "Eingehende Anlieferungen, Palette für Palette erfasst und abgezeichnet.",
+    "add": "Anlieferung erfassen",
+    "searchPlaceholder": "Nach Referenz, Charge oder Lieferantencode suchen…",
+    "searchLabel": "Anlieferungen durchsuchen",
+    "loadError": "Die Anlieferungen konnten nicht geladen werden.",
+    "empty": "Noch keine Anlieferungen. Erfassen Sie die erste, wenn ein Lkw ankommt.",
+    "noResults": "Keine Anlieferungen entsprechen Ihren Filtern.",
+    "filters": {
+      "allStatuses": "Alle Status",
+      "allSuppliers": "Alle Lieferanten",
+      "deliveredFrom": "Von",
+      "deliveredTo": "Bis"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "signed": "Abgezeichnet"
+    },
+    "columns": {
+      "reference": "Referenz",
+      "deliveredOn": "Angeliefert",
+      "supplier": "Lieferant",
+      "lotNo": "Charge",
+      "status": "Status",
+      "pallets": "Paletten",
+      "netWeight": "Netto",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "label": "Aktionen der Anlieferung öffnen",
+      "open": "Öffnen",
+      "delete": "Löschen"
+    },
+    "pagination": {
+      "summary": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "trash": {
+      "link": "Papierkorb",
+      "title": "Anlieferungs-Papierkorb",
+      "back": "Zurück zum Wareneingang",
+      "description": "Gelöschte Entwürfe. Abgezeichnete Datensätze sind unlöschbar und daher nie hier.",
+      "searchPlaceholder": "Nach Referenz, Charge oder Lieferantencode suchen…",
+      "searchLabel": "Papierkorb durchsuchen",
+      "loadError": "Der Papierkorb konnte nicht geladen werden.",
+      "empty": "Der Papierkorb ist leer.",
+      "noResults": "Nichts im Papierkorb entspricht Ihrer Suche.",
+      "columns": {
+        "reference": "Referenz",
+        "deliveredOn": "Angeliefert",
+        "supplier": "Lieferant",
+        "pallets": "Paletten",
+        "deletedAt": "Gelöscht",
+        "actions": "Aktionen"
+      },
+      "restore": "Wiederherstellen",
+      "restoring": "Wird wiederhergestellt…",
+      "restoreSuccess": "{reference} wurde wiederhergestellt.",
+      "restoreError": "Die Anlieferung konnte nicht wiederhergestellt werden. Bitte erneut versuchen.",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter"
+      }
+    },
+    "remove": {
+      "title": "{reference} löschen?",
+      "description": "Der Entwurf wandert in den Papierkorb und kann wiederhergestellt werden. Seine Nummer wird so oder so nicht neu vergeben.",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "success": "{reference} wurde in den Papierkorb verschoben.",
+      "error": "Die Anlieferung konnte nicht gelöscht werden. Bitte erneut versuchen."
+    },
+    "form": {
+      "createTitle": "Anlieferung erfassen",
+      "createDescription": "Die Referenznummer wird automatisch vergeben. Die Paletten werden anschließend am Datensatz gewogen.",
+      "editTitle": "Anlieferung bearbeiten",
+      "editDescription": "Kopfdaten dieses Entwurfs. Paletten werden am Datensatz bearbeitet.",
+      "supplier": "Lieferant",
+      "supplierPlaceholder": "Lieferantencode wählen",
+      "supplierHint": "Nur Codes — welche Firma hinter einem Code steht, ist eine eigene Berechtigung.",
+      "deliveredOn": "Angeliefert am",
+      "lotNo": "Chargennummer",
+      "lotNoPlaceholder": "Charge des Lieferanten, falls die Papiere eine nennen",
+      "documents": "Mitgelieferte Dokumente",
+      "documentsHint": "Ankreuzen, was physisch mit dem Lkw kam. Scans können am Datensatz angehängt werden.",
+      "submitCreate": "Anlieferung erfassen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{reference} wurde erfasst.",
+      "editSuccess": "{reference} wurde gespeichert.",
+      "error": "Die Anlieferung konnte nicht gespeichert werden. Bitte erneut versuchen."
+    },
+    "docTypes": {
+      "pallet_note": "Palettenschein",
+      "cmr": "CMR",
+      "delivery_note": "Lieferschein",
+      "packing_list": "Packliste",
+      "weight_certificate": "Wiegeschein",
+      "annex_vii": "Anhang VII"
+    },
+    "validation": {
+      "supplierRequired": "Bitte einen Lieferanten wählen.",
+      "dateInvalid": "Bitte ein gültiges Datum eingeben.",
+      "lotNoMax": "Die Chargennummer darf höchstens 80 Zeichen haben.",
+      "materialRequired": "Bitte das Material beschreiben (bis 200 Zeichen).",
+      "grossRange": "Das Bruttogewicht muss eine ganze Zahl zwischen 1 und 5000 kg sein.",
+      "tareRange": "Die Tara muss eine ganze Zahl zwischen 0 und 1000 kg sein.",
+      "tareRequired": "Sonderverpackung wird einzeln gewogen — bitte die Tara eingeben.",
+      "netPositive": "Das Bruttogewicht muss über der Tara liegen — die Differenz ist das Netto.",
+      "quantityRange": "Die Stückzahl muss eine ganze Zahl zwischen 1 und 100000 sein.",
+      "noticeMax": "Die Bemerkung darf höchstens 2000 Zeichen haben."
+    },
+    "detail": {
+      "title": "Anlieferung",
+      "back": "Zurück zum Wareneingang",
+      "loadError": "Diese Anlieferung konnte nicht geladen werden.",
+      "editHeader": "Kopf bearbeiten",
+      "delete": "Löschen",
+      "sign": "Abzeichnen",
+      "summary": {
+        "supplier": "Lieferant",
+        "deliveredOn": "Angeliefert",
+        "lotNo": "Charge",
+        "pallets": "Paletten",
+        "netWeight": "Netto gesamt"
+      },
+      "signedLine": "Abgezeichnet von {name} am {date}. Ein abgezeichneter Datensatz ist unveränderlich."
+    },
+    "pallets": {
+      "title": "Paletten",
+      "add": "Palette hinzufügen",
+      "empty": "Keine Paletten erfasst.",
+      "emptyEditable": "Noch keine Paletten — die erste direkt von der Waage hinzufügen.",
+      "columns": {
+        "label": "Nr.",
+        "packing": "Verpackung",
+        "material": "Material",
+        "gross": "Brutto",
+        "tare": "Tara",
+        "net": "Netto",
+        "quantity": "Stk.",
+        "classification": "Abfall/Wiederverwendung",
+        "worker": "Geprüft von",
+        "photos": "Fotos",
+        "actions": "Aktionen"
+      },
+      "weeeShort": "WEEE-Kat. {category}",
+      "unclassified": "Offen",
+      "photosFor": "Fotos von {label}",
+      "actionsLabel": "Paletten-Aktionen öffnen",
+      "edit": "Bearbeiten",
+      "remove": "Entfernen",
+      "removeTitle": "{label} entfernen?",
+      "removeDescription": "Eine entfernte Zeile hat nie existiert — ihre Fotos werden mitgelöscht. Spätere Paletten behalten ihre Nummern.",
+      "removing": "Wird entfernt…",
+      "removeConfirm": "Entfernen",
+      "removeSuccess": "{label} wurde entfernt.",
+      "removeError": "Die Palette konnte nicht entfernt werden. Bitte erneut versuchen."
+    },
+    "packing": {
+      "eur": "Europalette",
+      "eur_bb": "Euro + Big Bag",
+      "eur_kar": "Euro + Karton",
+      "one_way": "Einwegpalette",
+      "owp_kart": "Einweg + Karton",
+      "gitterbox": "Gitterbox",
+      "special": "Sonder (gewogen)"
+    },
+    "classification": {
+      "waste": "Abfall",
+      "reuse": "Wiederverwendung"
+    },
+    "weee": {
+      "1": "1 — Wärmeüberträger",
+      "2": "2 — Bildschirme & Monitore",
+      "3": "3 — Lampen",
+      "4": "4 — Großgeräte",
+      "5": "5 — Kleingeräte",
+      "6": "6 — Kleine IT- & TK-Geräte"
+    },
+    "palletForm": {
+      "createTitle": "Palette hinzufügen",
+      "createDescription": "Gewicht von der Waage; Tara und Netto werden automatisch behandelt.",
+      "editTitle": "{label} bearbeiten",
+      "editDescription": "Korrekturen an dieser Zeile des Entwurfs.",
+      "packing": "Verpackung",
+      "packingHint": "Standard-Tara {tare} kg, wird automatisch angewendet.",
+      "packingSpecialHint": "Wird einzeln gewogen — Tara unten eingeben.",
+      "gross": "Bruttogewicht (kg)",
+      "grossHint": "Direkt von der Waage.",
+      "tare": "Tara (kg)",
+      "tareHint": "Eigengewicht der Verpackung. Null ist zulässig für lose Ware.",
+      "quantity": "Stückzahl",
+      "netPreview": "Nettogewicht: {weight} kg",
+      "material": "Material",
+      "materialPlaceholder": "z. B. defekte Monitore, gemischte Marken",
+      "weeeCategory": "WEEE-Kategorie",
+      "weeeUnknown": "Noch nicht entschieden",
+      "weeeHint": "Für die Mengenbilanz. Kann später gesetzt werden.",
+      "classification": "Abfall / Wiederverwendung",
+      "classificationOpen": "Noch offen",
+      "classificationHint": "Muss vor dem Abzeichnen für jede Palette entschieden sein.",
+      "worker": "Geprüft von",
+      "workerSelf": "Ich (angemeldet)",
+      "workerHint": "Wer diese Palette physisch geprüft hat.",
+      "notice": "Bemerkung",
+      "noticePlaceholder": "Schaden, Abweichung vom Lieferschein…",
+      "submitCreate": "Palette hinzufügen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{label} wurde hinzugefügt.",
+      "editSuccess": "{label} wurde gespeichert.",
+      "error": "Die Palette konnte nicht gespeichert werden. Bitte erneut versuchen."
+    },
+    "photos": {
+      "title": "Fotos von {label}",
+      "description": "Etikett und Inhalt möglichst sichtbar. Downloads tragen den Namen des Datensatzes.",
+      "upload": "Foto hinzufügen",
+      "uploading": "Wird hochgeladen…",
+      "uploadSuccess": "Foto zu {label} hinzugefügt.",
+      "uploadError": "Das Foto konnte nicht hochgeladen werden. Bitte erneut versuchen.",
+      "empty": "Keine Fotos.",
+      "emptyEditable": "Noch keine Fotos — eines direkt von der Kamera hinzufügen.",
+      "download": "Herunterladen",
+      "downloadError": "Das Foto konnte nicht heruntergeladen werden. Bitte erneut versuchen.",
+      "delete": "Löschen",
+      "deleteSuccess": "Das Foto wurde gelöscht.",
+      "deleteError": "Das Foto konnte nicht gelöscht werden. Bitte erneut versuchen."
+    },
+    "documents": {
+      "title": "Begleitdokumente",
+      "toggleError": "Die Checkliste konnte nicht aktualisiert werden. Bitte erneut versuchen.",
+      "attachScan": "Scan anhängen",
+      "uploadSuccess": "Scan an {doc} angehängt.",
+      "uploadError": "Der Scan konnte nicht hochgeladen werden. Bitte erneut versuchen.",
+      "download": "Herunterladen",
+      "downloadError": "Der Scan konnte nicht heruntergeladen werden. Bitte erneut versuchen.",
+      "delete": "Löschen",
+      "deleteSuccess": "Der Scan wurde gelöscht.",
+      "deleteError": "Der Scan konnte nicht gelöscht werden. Bitte erneut versuchen."
+    },
+    "signOff": {
+      "title": "{reference} abzeichnen?",
+      "summary": "{pallets} Paletten, {weight} netto, {documents} Dokumente angekreuzt.",
+      "blockedEmpty": "Eine Anlieferung ohne erfasste Paletten kann nicht abgezeichnet werden.",
+      "blockedUnclassified": "Abfall/Wiederverwendung fehlt noch bei: {labels}.",
+      "irreversible": "Das Abzeichnen sperrt den Datensatz endgültig — es gibt kein Zurück. Korrekturen danach sind ein neuer Datensatz.",
+      "signing": "Wird abgezeichnet…",
+      "confirm": "Abzeichnen",
+      "success": "{reference} ist abgezeichnet und gesperrt.",
+      "error": "Die Anlieferung konnte nicht abgezeichnet werden. Bitte erneut versuchen."
+    }
+  },
+  "Suppliers": {
+    "title": "Lieferanten",
+    "description": "Die anliefernden Firmen und die Codes, die Wareneingänge für sie verwenden.",
+    "add": "Lieferant anlegen",
+    "searchPlaceholder": "Nach Code oder Name suchen…",
+    "searchLabel": "Lieferanten durchsuchen",
+    "loadError": "Die Lieferanten konnten nicht geladen werden.",
+    "empty": "Noch keine Lieferanten. Legen Sie den ersten an, um Anlieferungen zu erfassen.",
+    "noResults": "Keine Lieferanten entsprechen Ihrer Suche.",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "notes": "Notizen",
+      "createdAt": "Angelegt",
+      "actions": "Aktionen"
+    },
+    "actions": {
+      "label": "Lieferanten-Aktionen öffnen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen"
+    },
+    "pagination": {
+      "summary": "{from}–{to} von {total}",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "form": {
+      "createTitle": "Lieferant anlegen",
+      "createDescription": "Der Code erscheint auf den Wareneingängen; der Name bleibt auf dieser Seite.",
+      "editTitle": "Lieferant bearbeiten",
+      "editDescription": "Eine Code-Änderung ändert, was künftige Wareneingänge für diesen Lieferanten zeigen.",
+      "code": "Code",
+      "codeHint": "2–20 Buchstaben, Ziffern oder Bindestriche, z. B. S014.",
+      "codeTaken": "Ein Lieferant verwendet diesen Code bereits.",
+      "name": "Name",
+      "nameHint": "Nur hier sichtbar — Wareneingänge zeigen den Code.",
+      "notes": "Notizen",
+      "submitCreate": "Lieferant anlegen",
+      "submitEdit": "Änderungen speichern",
+      "submitting": "Wird gespeichert…",
+      "createSuccess": "{code} wurde angelegt.",
+      "editSuccess": "{code} wurde gespeichert.",
+      "error": "Der Lieferant konnte nicht gespeichert werden. Bitte erneut versuchen."
+    },
+    "remove": {
+      "title": "{code} löschen?",
+      "description": "Löschen ist für Lieferanten, die nie hätten angelegt werden sollen. Ein Lieferant mit erfassten Anlieferungen kann nicht gelöscht werden — die Aufzeichnungen müssen weiter sagen, wer geliefert hat.",
+      "confirm": "Löschen",
+      "deleting": "Wird gelöscht…",
+      "success": "{code} wurde in den Papierkorb verschoben.",
+      "error": "Der Lieferant konnte nicht gelöscht werden. Bitte erneut versuchen.",
+      "hasDeliveries": "{code} hat erfasste Anlieferungen und kann nicht gelöscht werden."
+    },
+    "trash": {
+      "link": "Papierkorb",
+      "title": "Lieferanten-Papierkorb",
+      "back": "Zurück zu den Lieferanten",
+      "description": "Gelöschte Lieferanten. Wiederherstellen bringt sie samt Code zurück.",
+      "searchPlaceholder": "Nach Code oder Name suchen…",
+      "searchLabel": "Papierkorb durchsuchen",
+      "loadError": "Der Papierkorb konnte nicht geladen werden.",
+      "empty": "Der Papierkorb ist leer.",
+      "noResults": "Nichts im Papierkorb entspricht Ihrer Suche.",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "deletedAt": "Gelöscht",
+        "actions": "Aktionen"
+      },
+      "restore": "Wiederherstellen",
+      "restoring": "Wird wiederhergestellt…",
+      "restoreSuccess": "{code} wurde wiederhergestellt.",
+      "restoreConflict": "Ein aktiver Lieferant verwendet {code} inzwischen — erst ändern oder löschen.",
+      "restoreError": "Der Lieferant konnte nicht wiederhergestellt werden. Bitte erneut versuchen.",
+      "pagination": {
+        "previous": "Zurück",
+        "next": "Weiter"
+      }
+    },
+    "validation": {
+      "code": "Der Code muss 2–20 Buchstaben, Ziffern oder Bindestriche haben, z. B. S014.",
+      "name": "Bitte einen Namen eingeben (bis 160 Zeichen).",
+      "notesMax": "Notizen dürfen höchstens 2000 Zeichen haben."
+    }
+  },
   "Settings": {
     "title": "Einstellungen",
     "description": "Einstellungen für diese Administration.",
@@ -428,7 +770,11 @@
       "Role": "Rollen",
       "RoleHint": "Rollen und die Berechtigungen, die sie gewähren.",
       "Container": "Container",
-      "ContainerHint": "Alles, was unter dieser Administration läuft."
+      "ContainerHint": "Alles, was unter dieser Administration läuft.",
+      "Supplier": "Lieferanten",
+      "SupplierHint": "Firmen, die Altgeräte anliefern. Lieferantennamen sind nur über diese Berechtigung sichtbar — Wareneingänge zeigen Codes.",
+      "Delivery": "Anlieferungen",
+      "DeliveryHint": "Wareneingänge und ihre Paletten."
     },
     "matrix": {
       "subject": "Ressource",
@@ -508,6 +854,17 @@
         "maxGrossWeightKg": "Max. Bruttogewicht (kg)",
         "manufacturedOn": "Hergestellt am",
         "nextInspectionOn": "Nächste Inspektion"
+      },
+      "Supplier": {
+        "code": "Code",
+        "name": "Name"
+      },
+      "Delivery": {
+        "status": "Status",
+        "deliveryNo": "Lieferungsnummer",
+        "deliveredOn": "Angeliefert am",
+        "lotNo": "Chargennummer",
+        "signedById": "Unterzeichnet von"
       }
     },
     "conditionOps": {

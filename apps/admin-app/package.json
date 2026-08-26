@@ -15,6 +15,7 @@
     "@casl/ability": "^6.7.3",
     "@hookform/resolvers": "^5.9.1",
     "@repo/access": "workspace:*",
+    "@repo/goods-in": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/shipping": "workspace:*",
     "@repo/ui": "workspace:*",

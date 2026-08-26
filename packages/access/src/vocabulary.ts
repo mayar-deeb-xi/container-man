@@ -22,7 +22,7 @@ export type AppAction = (typeof ACTIONS)[number];
  * is a read-only operator. The rest name a resource; add a subject here when the
  * API grows one, and the permission catalog below is what makes it assignable.
  */
-export const SUBJECTS = ["all", "User", "Role", "Container"] as const;
+export const SUBJECTS = ["all", "User", "Role", "Container", "Supplier", "Delivery"] as const;
 
 export type AppSubject = (typeof SUBJECTS)[number];
 
@@ -87,5 +87,33 @@ export const PERMISSION_CATALOG: readonly PermissionDefinition[] = [
     action: "delete",
     subject: "Container",
     description: "Delete containers, view the trash, and restore from it",
+  },
+
+  { action: "manage", subject: "Supplier", description: "Full access to suppliers" },
+  {
+    action: "read",
+    subject: "Supplier",
+    description: "View suppliers, including their names — goods-in records alone show only codes",
+  },
+  { action: "create", subject: "Supplier", description: "Create suppliers" },
+  { action: "update", subject: "Supplier", description: "Edit suppliers" },
+  {
+    action: "delete",
+    subject: "Supplier",
+    description: "Delete suppliers with no recorded deliveries, view the trash, and restore",
+  },
+
+  { action: "manage", subject: "Delivery", description: "Full access to goods-in deliveries" },
+  { action: "read", subject: "Delivery", description: "View deliveries and their pallets" },
+  { action: "create", subject: "Delivery", description: "Record new deliveries" },
+  {
+    action: "update",
+    subject: "Delivery",
+    description: "Edit draft deliveries and their pallets, and sign them off",
+  },
+  {
+    action: "delete",
+    subject: "Delivery",
+    description: "Delete draft deliveries, view the trash, and restore from it",
   },
 ];

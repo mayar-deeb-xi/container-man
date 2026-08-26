@@ -1,3 +1,4 @@
+import { DELIVERY_STATUSES } from "@repo/goods-in";
 import {
   CONTAINER_CONDITIONS,
   CONTAINER_SIZES_FT,
@@ -92,5 +93,20 @@ export const CONDITION_FIELDS: Record<AppResourceSubject, readonly ConditionFiel
     { name: "maxGrossWeightKg", kind: "number", integer: true },
     { name: "manufacturedOn", kind: "date", nullable: true },
     { name: "nextInspectionOn", kind: "date", nullable: true },
+  ],
+  Supplier: [
+    { name: "code", kind: "text" },
+    { name: "name", kind: "text" },
+  ],
+  // `supplierId` is deliberately not offered: it is a uuid that references a supplier,
+  // not an account, so neither the `user` kind (which draws an account picker) nor the
+  // `text` kind (which the schema pin refuses for uuid columns) describes it. A
+  // hand-written JSON condition on it still validates and compiles.
+  Delivery: [
+    { name: "status", kind: "enum", values: DELIVERY_STATUSES },
+    { name: "deliveryNo", kind: "number", integer: true },
+    { name: "deliveredOn", kind: "date" },
+    { name: "lotNo", kind: "text", nullable: true },
+    { name: "signedById", kind: "user", nullable: true },
   ],
 };

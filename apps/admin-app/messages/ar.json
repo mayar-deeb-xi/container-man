@@ -19,7 +19,9 @@
     "containers": "الحاويات",
     "settings": "الإعدادات",
     "support": "الدعم",
-    "toggleSidebar": "إظهار/إخفاء القائمة الجانبية"
+    "toggleSidebar": "إظهار/إخفاء القائمة الجانبية",
+    "deliveries": "استلام البضائع",
+    "suppliers": "المورّدون"
   },
   "Theme": {
     "toggle": "تغيير المظهر",
@@ -333,6 +335,346 @@
       "dateInvalid": "أدخل تاريخًا صحيحًا"
     }
   },
+  "GoodsIn": {
+    "title": "استلام البضائع",
+    "description": "التوريدات الواردة، تُسجّل منصة بمنصة ثم تُوقّع.",
+    "add": "تسجيل توريد",
+    "searchPlaceholder": "ابحث بالمرجع أو الدفعة أو رمز المورّد…",
+    "searchLabel": "البحث في التوريدات",
+    "loadError": "تعذّر تحميل التوريدات.",
+    "empty": "لا توريدات بعد. سجّل الأول عند وصول شاحنة.",
+    "noResults": "لا توريدات تطابق عوامل التصفية.",
+    "filters": {
+      "allStatuses": "كل الحالات",
+      "allSuppliers": "كل المورّدين",
+      "deliveredFrom": "من",
+      "deliveredTo": "إلى"
+    },
+    "status": {
+      "draft": "مسودة",
+      "signed": "موقّع"
+    },
+    "columns": {
+      "reference": "المرجع",
+      "deliveredOn": "تاريخ التوريد",
+      "supplier": "المورّد",
+      "lotNo": "الدفعة",
+      "status": "الحالة",
+      "pallets": "المنصات",
+      "netWeight": "الصافي",
+      "actions": "إجراءات"
+    },
+    "actions": {
+      "label": "فتح إجراءات التوريد",
+      "open": "فتح",
+      "delete": "حذف"
+    },
+    "pagination": {
+      "summary": "{from}–{to} من {total}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "trash": {
+      "link": "المهملات",
+      "title": "مهملات التوريدات",
+      "back": "عودة إلى استلام البضائع",
+      "description": "مسودات محذوفة. السجلات الموقّعة لا تُحذف أبدًا، لذا لا تظهر هنا.",
+      "searchPlaceholder": "ابحث بالمرجع أو الدفعة أو رمز المورّد…",
+      "searchLabel": "البحث في المهملات",
+      "loadError": "تعذّر تحميل المهملات.",
+      "empty": "المهملات فارغة.",
+      "noResults": "لا شيء في المهملات يطابق بحثك.",
+      "columns": {
+        "reference": "المرجع",
+        "deliveredOn": "تاريخ التوريد",
+        "supplier": "المورّد",
+        "pallets": "المنصات",
+        "deletedAt": "حُذف",
+        "actions": "إجراءات"
+      },
+      "restore": "استعادة",
+      "restoring": "جارٍ الاستعادة…",
+      "restoreSuccess": "تمت استعادة {reference}.",
+      "restoreError": "تعذّرت استعادة التوريد. حاول مرة أخرى.",
+      "pagination": {
+        "previous": "السابق",
+        "next": "التالي"
+      }
+    },
+    "remove": {
+      "title": "حذف {reference}؟",
+      "description": "تنتقل هذه المسودة إلى المهملات ويمكن استعادتها. رقمها لا يُعاد استخدامه في الحالتين.",
+      "confirm": "حذف",
+      "deleting": "جارٍ الحذف…",
+      "success": "نُقل {reference} إلى المهملات.",
+      "error": "تعذّر حذف التوريد. حاول مرة أخرى."
+    },
+    "form": {
+      "createTitle": "تسجيل توريد",
+      "createDescription": "يُمنح الرقم المرجعي تلقائيًا. تُوزن المنصات بعد ذلك على السجل نفسه.",
+      "editTitle": "تعديل التوريد",
+      "editDescription": "بيانات ترويسة هذه المسودة. تُعدَّل المنصات على السجل.",
+      "supplier": "المورّد",
+      "supplierPlaceholder": "اختر رمز المورّد",
+      "supplierHint": "رموز فقط — معرفة الشركة صاحبة الرمز صلاحية مستقلة.",
+      "deliveredOn": "تاريخ التوريد",
+      "lotNo": "رقم الدفعة",
+      "lotNoPlaceholder": "دفعة المورّد إن وردت في الأوراق",
+      "documents": "المستندات الواردة",
+      "documentsHint": "علّم ما وصل فعليًا مع الشاحنة. يمكن إرفاق الصور الممسوحة على السجل.",
+      "submitCreate": "تسجيل التوريد",
+      "submitEdit": "حفظ التغييرات",
+      "submitting": "جارٍ الحفظ…",
+      "createSuccess": "تم تسجيل {reference}.",
+      "editSuccess": "تم حفظ {reference}.",
+      "error": "تعذّر حفظ التوريد. حاول مرة أخرى."
+    },
+    "docTypes": {
+      "pallet_note": "إشعار المنصات",
+      "cmr": "CMR",
+      "delivery_note": "إشعار التسليم",
+      "packing_list": "قائمة التعبئة",
+      "weight_certificate": "شهادة الوزن",
+      "annex_vii": "الملحق السابع"
+    },
+    "validation": {
+      "supplierRequired": "اختر مورّدًا.",
+      "dateInvalid": "أدخل تاريخًا صحيحًا.",
+      "lotNoMax": "رقم الدفعة 80 حرفًا كحد أقصى.",
+      "materialRequired": "صف المادة (حتى 200 حرف).",
+      "grossRange": "الوزن الإجمالي عدد صحيح بين 1 و5000 كغم.",
+      "tareRange": "الوزن الفارغ عدد صحيح بين 0 و1000 كغم.",
+      "tareRequired": "التغليف الخاص يوزن على حدة — أدخل وزنه الفارغ.",
+      "netPositive": "يجب أن يتجاوز الوزن الإجمالي الفارغ — الفرق هو الصافي.",
+      "quantityRange": "العدد عدد صحيح بين 1 و100000.",
+      "noticeMax": "الملاحظة 2000 حرف كحد أقصى."
+    },
+    "detail": {
+      "title": "توريد",
+      "back": "عودة إلى استلام البضائع",
+      "loadError": "تعذّر تحميل هذا التوريد.",
+      "editHeader": "تعديل الترويسة",
+      "delete": "حذف",
+      "sign": "توقيع",
+      "summary": {
+        "supplier": "المورّد",
+        "deliveredOn": "تاريخ التوريد",
+        "lotNo": "الدفعة",
+        "pallets": "المنصات",
+        "netWeight": "إجمالي الصافي"
+      },
+      "signedLine": "وقّعه {name} في {date}. السجل الموقّع غير قابل للتغيير."
+    },
+    "pallets": {
+      "title": "المنصات",
+      "add": "إضافة منصة",
+      "empty": "لا منصات مسجلة.",
+      "emptyEditable": "لا منصات بعد — أضف الأولى فور نزولها عن الميزان.",
+      "columns": {
+        "label": "رقم",
+        "packing": "التغليف",
+        "material": "المادة",
+        "gross": "الإجمالي",
+        "tare": "الفارغ",
+        "net": "الصافي",
+        "quantity": "قطع",
+        "classification": "نفايات/إعادة استخدام",
+        "worker": "فحصها",
+        "photos": "صور",
+        "actions": "إجراءات"
+      },
+      "weeeShort": "فئة WEEE {category}",
+      "unclassified": "مفتوح",
+      "photosFor": "صور {label}",
+      "actionsLabel": "فتح إجراءات المنصة",
+      "edit": "تعديل",
+      "remove": "إزالة",
+      "removeTitle": "إزالة {label}؟",
+      "removeDescription": "السطر المزال كأنه لم يكن — تُحذف صوره معه. المنصات اللاحقة تحتفظ بأرقامها.",
+      "removing": "جارٍ الإزالة…",
+      "removeConfirm": "إزالة",
+      "removeSuccess": "أُزيلت {label}.",
+      "removeError": "تعذّرت إزالة المنصة. حاول مرة أخرى."
+    },
+    "packing": {
+      "eur": "منصة أوروبية",
+      "eur_bb": "أوروبية + كيس كبير",
+      "eur_kar": "أوروبية + كرتون",
+      "one_way": "منصة لمرة واحدة",
+      "owp_kart": "لمرة واحدة + كرتون",
+      "gitterbox": "صندوق شبكي",
+      "special": "خاص (يوزن)"
+    },
+    "classification": {
+      "waste": "نفايات",
+      "reuse": "إعادة استخدام"
+    },
+    "weee": {
+      "1": "1 — أجهزة التبادل الحراري",
+      "2": "2 — الشاشات",
+      "3": "3 — المصابيح",
+      "4": "4 — الأجهزة الكبيرة",
+      "5": "5 — الأجهزة الصغيرة",
+      "6": "6 — أجهزة الحاسوب والاتصالات الصغيرة"
+    },
+    "palletForm": {
+      "createTitle": "إضافة منصة",
+      "createDescription": "الوزن من الميزان؛ الفارغ والصافي يُحسبان تلقائيًا.",
+      "editTitle": "تعديل {label}",
+      "editDescription": "تصحيحات على هذا السطر من المسودة.",
+      "packing": "التغليف",
+      "packingHint": "الوزن الفارغ القياسي {tare} كغم، يُطبَّق تلقائيًا.",
+      "packingSpecialHint": "يوزن على حدة — أدخل الفارغ أدناه.",
+      "gross": "الوزن الإجمالي (كغم)",
+      "grossHint": "مباشرة من الميزان.",
+      "tare": "الوزن الفارغ (كغم)",
+      "tareHint": "وزن التغليف نفسه. الصفر مقبول للبضائع السائبة.",
+      "quantity": "عدد القطع",
+      "netPreview": "الوزن الصافي: {weight} كغم",
+      "material": "المادة",
+      "materialPlaceholder": "مثال: شاشات معطوبة، ماركات مختلطة",
+      "weeeCategory": "فئة WEEE",
+      "weeeUnknown": "لم تُحدَّد بعد",
+      "weeeHint": "لتقرير الموازنة الكمية. يمكن تحديدها لاحقًا.",
+      "classification": "نفايات / إعادة استخدام",
+      "classificationOpen": "مفتوح",
+      "classificationHint": "يجب حسمها لكل منصة قبل توقيع السجل.",
+      "worker": "فحصها",
+      "workerSelf": "أنا (المسجَّل حاليًا)",
+      "workerHint": "من فحص هذه المنصة فعليًا.",
+      "notice": "ملاحظة",
+      "noticePlaceholder": "تلف، اختلاف عن إشعار التسليم…",
+      "submitCreate": "إضافة المنصة",
+      "submitEdit": "حفظ التغييرات",
+      "submitting": "جارٍ الحفظ…",
+      "createSuccess": "أُضيفت {label}.",
+      "editSuccess": "تم حفظ {label}.",
+      "error": "تعذّر حفظ المنصة. حاول مرة أخرى."
+    },
+    "photos": {
+      "title": "صور {label}",
+      "description": "الملصق والمحتوى ظاهرين ما أمكن. التنزيلات تحمل اسم السجل.",
+      "upload": "إضافة صورة",
+      "uploading": "جارٍ الرفع…",
+      "uploadSuccess": "أُضيفت صورة إلى {label}.",
+      "uploadError": "تعذّر رفع الصورة. حاول مرة أخرى.",
+      "empty": "لا صور.",
+      "emptyEditable": "لا صور بعد — أضف واحدة مباشرة من الكاميرا.",
+      "download": "تنزيل",
+      "downloadError": "تعذّر تنزيل الصورة. حاول مرة أخرى.",
+      "delete": "حذف",
+      "deleteSuccess": "حُذفت الصورة.",
+      "deleteError": "تعذّر حذف الصورة. حاول مرة أخرى."
+    },
+    "documents": {
+      "title": "المستندات المرافقة",
+      "toggleError": "تعذّر تحديث القائمة. حاول مرة أخرى.",
+      "attachScan": "إرفاق مسح",
+      "uploadSuccess": "أُرفق المسح بـ {doc}.",
+      "uploadError": "تعذّر رفع المسح. حاول مرة أخرى.",
+      "download": "تنزيل",
+      "downloadError": "تعذّر تنزيل المسح. حاول مرة أخرى.",
+      "delete": "حذف",
+      "deleteSuccess": "حُذف المسح.",
+      "deleteError": "تعذّر حذف المسح. حاول مرة أخرى."
+    },
+    "signOff": {
+      "title": "توقيع {reference}؟",
+      "summary": "{pallets} منصات، {weight} صافي، {documents} مستندات معلَّمة.",
+      "blockedEmpty": "لا يمكن توقيع توريد بلا منصات مسجلة.",
+      "blockedUnclassified": "قرار نفايات/إعادة استخدام ما يزال ناقصًا في: {labels}.",
+      "irreversible": "التوقيع يقفل السجل نهائيًا — لا تراجع. التصحيحات بعده سجل جديد.",
+      "signing": "جارٍ التوقيع…",
+      "confirm": "توقيع",
+      "success": "{reference} موقّع ومقفل.",
+      "error": "تعذّر توقيع التوريد. حاول مرة أخرى."
+    }
+  },
+  "Suppliers": {
+    "title": "المورّدون",
+    "description": "الشركات التي تورّد، والرموز التي تستخدمها سجلات الاستلام لها.",
+    "add": "إضافة مورّد",
+    "searchPlaceholder": "ابحث بالرمز أو الاسم…",
+    "searchLabel": "البحث في المورّدين",
+    "loadError": "تعذّر تحميل المورّدين.",
+    "empty": "لا مورّدين بعد. أضف الأول لبدء تسجيل التوريدات.",
+    "noResults": "لا مورّدين يطابقون بحثك.",
+    "columns": {
+      "code": "الرمز",
+      "name": "الاسم",
+      "notes": "ملاحظات",
+      "createdAt": "أُضيف",
+      "actions": "إجراءات"
+    },
+    "actions": {
+      "label": "فتح إجراءات المورّد",
+      "edit": "تعديل",
+      "delete": "حذف"
+    },
+    "pagination": {
+      "summary": "{from}–{to} من {total}",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "form": {
+      "createTitle": "إضافة مورّد",
+      "createDescription": "الرمز هو ما تعرضه سجلات الاستلام؛ الاسم يبقى في هذه الصفحة.",
+      "editTitle": "تعديل المورّد",
+      "editDescription": "تغيير الرمز يغيّر ما تعرضه السجلات القادمة لهذا المورّد.",
+      "code": "الرمز",
+      "codeHint": "من 2 إلى 20 حرفًا أو رقمًا أو شرطة، مثل S014.",
+      "codeTaken": "يستخدم مورّد آخر هذا الرمز بالفعل.",
+      "name": "الاسم",
+      "nameHint": "يظهر هنا فقط — سجلات الاستلام تعرض الرمز.",
+      "notes": "ملاحظات",
+      "submitCreate": "إضافة المورّد",
+      "submitEdit": "حفظ التغييرات",
+      "submitting": "جارٍ الحفظ…",
+      "createSuccess": "تمت إضافة {code}.",
+      "editSuccess": "تم حفظ {code}.",
+      "error": "تعذّر حفظ المورّد. حاول مرة أخرى."
+    },
+    "remove": {
+      "title": "حذف {code}؟",
+      "description": "الحذف مخصص لمورّد ما كان يجب إدخاله أصلًا. لا يمكن حذف مورّد له توريدات مسجلة — يجب أن تظل السجلات تحدد من ورّد.",
+      "confirm": "حذف",
+      "deleting": "جارٍ الحذف…",
+      "success": "نُقل {code} إلى المهملات.",
+      "error": "تعذّر حذف المورّد. حاول مرة أخرى.",
+      "hasDeliveries": "لدى {code} توريدات مسجلة ولا يمكن حذفه."
+    },
+    "trash": {
+      "link": "المهملات",
+      "title": "مهملات المورّدين",
+      "back": "عودة إلى المورّدين",
+      "description": "المورّدون المحذوفون. الاستعادة تعيد المورّد برمزه.",
+      "searchPlaceholder": "ابحث بالرمز أو الاسم…",
+      "searchLabel": "البحث في المهملات",
+      "loadError": "تعذّر تحميل المهملات.",
+      "empty": "المهملات فارغة.",
+      "noResults": "لا شيء في المهملات يطابق بحثك.",
+      "columns": {
+        "code": "الرمز",
+        "name": "الاسم",
+        "deletedAt": "حُذف",
+        "actions": "إجراءات"
+      },
+      "restore": "استعادة",
+      "restoring": "جارٍ الاستعادة…",
+      "restoreSuccess": "تمت استعادة {code}.",
+      "restoreConflict": "مورّد نشط يستخدم {code} الآن — عدّله أو احذفه أولًا.",
+      "restoreError": "تعذّرت استعادة المورّد. حاول مرة أخرى.",
+      "pagination": {
+        "previous": "السابق",
+        "next": "التالي"
+      }
+    },
+    "validation": {
+      "code": "يجب أن يكون الرمز من 2 إلى 20 حرفًا أو رقمًا أو شرطة، مثل S014.",
+      "name": "أدخل اسمًا (حتى 160 حرفًا).",
+      "notesMax": "الملاحظات 2000 حرف كحد أقصى."
+    }
+  },
   "Settings": {
     "title": "الإعدادات",
     "description": "تفضيلات لوحة الإدارة.",
@@ -394,7 +736,11 @@
       "Role": "الأدوار",
       "RoleHint": "الأدوار والصلاحيات التي تمنحها.",
       "Container": "الحاويات",
-      "ContainerHint": "كل ما يعمل ضمن هذه اللوحة."
+      "ContainerHint": "كل ما يعمل ضمن هذه اللوحة.",
+      "Supplier": "المورّدون",
+      "SupplierHint": "الشركات التي تورّد النفايات الإلكترونية. أسماء المورّدين تظهر عبر هذه الصلاحية فقط — سجلات الاستلام تعرض الرموز.",
+      "Delivery": "التوريدات",
+      "DeliveryHint": "سجلات استلام البضائع ومنصّاتها."
     },
     "pagination": {
       "summary": "{from}–{to} من {total}",
@@ -515,6 +861,17 @@
         "maxGrossWeightKg": "أقصى وزن إجمالي (كغم)",
         "manufacturedOn": "تاريخ الصنع",
         "nextInspectionOn": "الفحص التالي"
+      },
+      "Supplier": {
+        "code": "الرمز",
+        "name": "الاسم"
+      },
+      "Delivery": {
+        "status": "الحالة",
+        "deliveryNo": "رقم التوريد",
+        "deliveredOn": "تاريخ التوريد",
+        "lotNo": "رقم الدفعة",
+        "signedById": "وقّعها"
       }
     },
     "conditionOps": {

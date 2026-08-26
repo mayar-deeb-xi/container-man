@@ -7,10 +7,13 @@ import { HealthController } from "./health.controller";
 import { AbilityModule } from "./lib/ability/ability.module";
 import { DbModule } from "./lib/db/db.module";
 import { RedisModule } from "./lib/redis/redis.module";
+import { StorageModule } from "./lib/storage/storage.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ContainersModule } from "./modules/containers/containers.module";
+import { DeliveriesModule } from "./modules/deliveries/deliveries.module";
 import { PermissionsModule } from "./modules/permissions/permissions.module";
 import { RolesModule } from "./modules/roles/roles.module";
+import { SuppliersModule } from "./modules/suppliers/suppliers.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Global()
@@ -25,10 +28,13 @@ import { UsersModule } from "./modules/users/users.module";
     }),
     DbModule,
     RedisModule,
+    StorageModule,
     AbilityModule,
     UsersModule,
     RolesModule,
     ContainersModule,
+    SuppliersModule,
+    DeliveriesModule,
     PermissionsModule,
     AuthModule,
   ],

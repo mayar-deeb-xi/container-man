@@ -1,11 +1,13 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Boxes,
+  Factory,
   HelpCircle,
   KeyRound,
   LayoutDashboard,
   Settings,
   ShieldCheck,
+  Truck,
   Users,
   Warehouse,
 } from "lucide-react";
@@ -100,6 +102,18 @@ export const NAV_GROUPS = [
             href: "/containers",
             icon: Boxes,
             requires: { action: "read", subject: "Container" },
+          },
+          {
+            labelKey: "deliveries",
+            href: "/deliveries",
+            icon: Truck,
+            requires: { action: "read", subject: "Delivery" },
+          },
+          {
+            labelKey: "suppliers",
+            href: "/suppliers",
+            icon: Factory,
+            requires: { action: "read", subject: "Supplier" },
           },
         ],
       },

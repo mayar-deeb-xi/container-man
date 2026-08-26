@@ -35,6 +35,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@repo/goods-in':
+        specifier: workspace:*
+        version: link:../../packages/goods-in
       '@repo/shipping':
         specifier: workspace:*
         version: link:../../packages/shipping
@@ -147,6 +150,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@repo/goods-in':
+        specifier: workspace:*
+        version: link:../../packages/goods-in
       '@repo/shipping':
         specifier: workspace:*
         version: link:../../packages/shipping
@@ -187,6 +193,9 @@ importers:
       '@types/express':
         specifier: ^5.0.3
         version: 5.0.6
+      '@types/multer':
+        specifier: ^2.0.0
+        version: 2.2.0
       '@types/node':
         specifier: ^22.18.12
         version: 22.20.1
@@ -208,6 +217,9 @@ importers:
       '@casl/ability':
         specifier: ^6.7.3
         version: 6.8.1
+      '@repo/goods-in':
+        specifier: workspace:*
+        version: link:../goods-in
       '@repo/shipping':
         specifier: workspace:*
         version: link:../shipping
@@ -295,6 +307,9 @@ importers:
       '@repo/auth':
         specifier: workspace:*
         version: link:../auth
+      '@repo/goods-in':
+        specifier: workspace:*
+        version: link:../goods-in
       '@repo/shipping':
         specifier: workspace:*
         version: link:../shipping
@@ -329,6 +344,24 @@ importers:
       tsx:
         specifier: ^4.20.6
         version: 4.23.12
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+
+  packages/goods-in:
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^22.18.12
+        version: 22.20.1
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.1(jiti@2.7.0)
       typescript:
         specifier: 5.9.2
         version: 5.9.2
@@ -2863,6 +2896,9 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
+  '@types/multer@2.2.0':
+    resolution: {integrity: sha512-3U1troeqGV8Ntp7Q3klwf4zr23VEoqYVocYXaswm9+8z3O9UHDYAqLxjJ/h550iRADTjKdOdhhasXw6gD6kYtg==}
 
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
@@ -7538,6 +7574,10 @@ snapshots:
   '@types/http-errors@2.0.5': {}
 
   '@types/json-schema@7.0.15': {}
+
+  '@types/multer@2.2.0':
+    dependencies:
+      '@types/express': 5.0.6
 
   '@types/node@22.20.1':
     dependencies:

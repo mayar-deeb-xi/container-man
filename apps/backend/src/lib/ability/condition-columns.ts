@@ -2,7 +2,7 @@ import type { Column } from "drizzle-orm";
 import { getTableColumns } from "drizzle-orm";
 
 import type { AppResourceSubject } from "@repo/access";
-import { containers, roles, users } from "@repo/db";
+import { containers, deliveries, roles, suppliers, users } from "@repo/db";
 
 /**
  * The columns a stored condition may match on, per subject.
@@ -22,4 +22,8 @@ export const CONDITION_COLUMNS: Record<AppResourceSubject, Record<string, Column
   User: getTableColumns(users),
   Role: getTableColumns(roles),
   Container: getTableColumns(containers),
+  Supplier: getTableColumns(suppliers),
+  // Pallets have no entry because they are not a subject: their authorization is the
+  // delivery's, so a condition scoping goods-in work is written against `Delivery`.
+  Delivery: getTableColumns(deliveries),
 };

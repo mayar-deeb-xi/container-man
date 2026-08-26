@@ -19,7 +19,9 @@
     "containers": "Containers",
     "settings": "Settings",
     "support": "Support",
-    "toggleSidebar": "Toggle sidebar"
+    "toggleSidebar": "Toggle sidebar",
+    "deliveries": "Goods in",
+    "suppliers": "Suppliers"
   },
   "Theme": {
     "toggle": "Toggle theme",
@@ -333,6 +335,346 @@
       "dateInvalid": "Enter a valid date"
     }
   },
+  "GoodsIn": {
+    "title": "Goods in",
+    "description": "Incoming deliveries, checked in pallet by pallet and signed off.",
+    "add": "Record delivery",
+    "searchPlaceholder": "Search by reference, lot or supplier code…",
+    "searchLabel": "Search deliveries",
+    "loadError": "Could not load the deliveries.",
+    "empty": "No deliveries yet. Record the first one when a lorry arrives.",
+    "noResults": "No deliveries match your filters.",
+    "filters": {
+      "allStatuses": "All statuses",
+      "allSuppliers": "All suppliers",
+      "deliveredFrom": "From",
+      "deliveredTo": "To"
+    },
+    "status": {
+      "draft": "Draft",
+      "signed": "Signed"
+    },
+    "columns": {
+      "reference": "Reference",
+      "deliveredOn": "Delivered",
+      "supplier": "Supplier",
+      "lotNo": "Lot",
+      "status": "Status",
+      "pallets": "Pallets",
+      "netWeight": "Net",
+      "actions": "Actions"
+    },
+    "actions": {
+      "label": "Open delivery actions",
+      "open": "Open",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "trash": {
+      "link": "Trash",
+      "title": "Delivery trash",
+      "back": "Back to goods in",
+      "description": "Deleted drafts. Signed records can never be deleted, so they are never here.",
+      "searchPlaceholder": "Search by reference, lot or supplier code…",
+      "searchLabel": "Search the trash",
+      "loadError": "Could not load the trash.",
+      "empty": "The trash is empty.",
+      "noResults": "Nothing in the trash matches your search.",
+      "columns": {
+        "reference": "Reference",
+        "deliveredOn": "Delivered",
+        "supplier": "Supplier",
+        "pallets": "Pallets",
+        "deletedAt": "Deleted",
+        "actions": "Actions"
+      },
+      "restore": "Restore",
+      "restoring": "Restoring…",
+      "restoreSuccess": "{reference} was restored.",
+      "restoreError": "Could not restore the delivery. Please try again.",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+      }
+    },
+    "remove": {
+      "title": "Delete {reference}?",
+      "description": "This draft moves to the trash and can be restored. Its number is not reused either way.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "success": "{reference} was moved to the trash.",
+      "error": "Could not delete the delivery. Please try again."
+    },
+    "form": {
+      "createTitle": "Record a delivery",
+      "createDescription": "The reference number is assigned automatically. Pallets are weighed in on the record itself, next.",
+      "editTitle": "Edit delivery",
+      "editDescription": "Header details of this draft. Pallets are edited on the record.",
+      "supplier": "Supplier",
+      "supplierPlaceholder": "Choose a supplier code",
+      "supplierHint": "Codes only — which company a code belongs to is its own permission.",
+      "deliveredOn": "Delivered on",
+      "lotNo": "Lot number",
+      "lotNoPlaceholder": "Supplier's batch, if the paperwork has one",
+      "documents": "Documents that arrived",
+      "documentsHint": "Tick what physically came with the lorry. Scans can be attached on the record.",
+      "submitCreate": "Record delivery",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{reference} was recorded.",
+      "editSuccess": "{reference} was saved.",
+      "error": "Could not save the delivery. Please try again."
+    },
+    "docTypes": {
+      "pallet_note": "Pallet note",
+      "cmr": "CMR",
+      "delivery_note": "Delivery note",
+      "packing_list": "Packing list",
+      "weight_certificate": "Weight certificate",
+      "annex_vii": "Annex VII"
+    },
+    "validation": {
+      "supplierRequired": "Choose a supplier.",
+      "dateInvalid": "Enter a valid date.",
+      "lotNoMax": "The lot number can be at most 80 characters.",
+      "materialRequired": "Describe the material (up to 200 characters).",
+      "grossRange": "The gross weight must be a whole number between 1 and 5000 kg.",
+      "tareRange": "The tare must be a whole number between 0 and 1000 kg.",
+      "tareRequired": "Special packing is weighed individually — enter its tare.",
+      "netPositive": "The gross weight must exceed the tare — the difference is the net.",
+      "quantityRange": "The quantity must be a whole number between 1 and 100000.",
+      "noticeMax": "The notice can be at most 2000 characters."
+    },
+    "detail": {
+      "title": "Delivery",
+      "back": "Back to goods in",
+      "loadError": "Could not load this delivery.",
+      "editHeader": "Edit header",
+      "delete": "Delete",
+      "sign": "Sign off",
+      "summary": {
+        "supplier": "Supplier",
+        "deliveredOn": "Delivered",
+        "lotNo": "Lot",
+        "pallets": "Pallets",
+        "netWeight": "Total net"
+      },
+      "signedLine": "Signed by {name} on {date}. A signed record is immutable."
+    },
+    "pallets": {
+      "title": "Pallets",
+      "add": "Add pallet",
+      "empty": "No pallets recorded.",
+      "emptyEditable": "No pallets yet — add the first one as it comes off the scale.",
+      "columns": {
+        "label": "No.",
+        "packing": "Packing",
+        "material": "Material",
+        "gross": "Gross",
+        "tare": "Tare",
+        "net": "Net",
+        "quantity": "Pcs",
+        "classification": "Waste/Reuse",
+        "worker": "Checked by",
+        "photos": "Photos",
+        "actions": "Actions"
+      },
+      "weeeShort": "WEEE cat. {category}",
+      "unclassified": "Open",
+      "photosFor": "Photos of {label}",
+      "actionsLabel": "Open pallet actions",
+      "edit": "Edit",
+      "remove": "Remove",
+      "removeTitle": "Remove {label}?",
+      "removeDescription": "A removed line never happened — its photos are deleted with it. Later pallets keep their numbers.",
+      "removing": "Removing…",
+      "removeConfirm": "Remove",
+      "removeSuccess": "{label} was removed.",
+      "removeError": "Could not remove the pallet. Please try again."
+    },
+    "packing": {
+      "eur": "Euro pallet",
+      "eur_bb": "Euro + big bag",
+      "eur_kar": "Euro + carton",
+      "one_way": "One-way pallet",
+      "owp_kart": "One-way + carton",
+      "gitterbox": "Gitterbox",
+      "special": "Special (weighed)"
+    },
+    "classification": {
+      "waste": "Waste",
+      "reuse": "Reuse"
+    },
+    "weee": {
+      "1": "1 — Temperature exchange",
+      "2": "2 — Screens & monitors",
+      "3": "3 — Lamps",
+      "4": "4 — Large equipment",
+      "5": "5 — Small equipment",
+      "6": "6 — Small IT & telecom"
+    },
+    "palletForm": {
+      "createTitle": "Add a pallet",
+      "createDescription": "Weight off the scale; the tare and the net are handled for you.",
+      "editTitle": "Edit {label}",
+      "editDescription": "Corrections to this line of the draft.",
+      "packing": "Packing",
+      "packingHint": "Standard tare {tare} kg, applied automatically.",
+      "packingSpecialHint": "Weighed individually — enter the tare below.",
+      "gross": "Gross weight (kg)",
+      "grossHint": "Straight off the scale.",
+      "tare": "Tare (kg)",
+      "tareHint": "The packaging's own weight. Zero is fine for loose goods.",
+      "quantity": "Pieces",
+      "netPreview": "Net weight: {weight} kg",
+      "material": "Material",
+      "materialPlaceholder": "e.g. defective monitors, mixed brands",
+      "weeeCategory": "WEEE category",
+      "weeeUnknown": "Not decided yet",
+      "weeeHint": "For the mass-balance report. Can be set later.",
+      "classification": "Waste / reuse",
+      "classificationOpen": "Still open",
+      "classificationHint": "Must be decided on every pallet before the record can be signed.",
+      "worker": "Checked by",
+      "workerSelf": "Me (signed in)",
+      "workerHint": "Who physically checked this pallet.",
+      "notice": "Notice",
+      "noticePlaceholder": "Damage, mismatch against the delivery note…",
+      "submitCreate": "Add pallet",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{label} was added.",
+      "editSuccess": "{label} was saved.",
+      "error": "Could not save the pallet. Please try again."
+    },
+    "photos": {
+      "title": "Photos of {label}",
+      "description": "Label and contents visible where possible. Downloads carry the record's name.",
+      "upload": "Add photo",
+      "uploading": "Uploading…",
+      "uploadSuccess": "Photo added to {label}.",
+      "uploadError": "Could not upload the photo. Please try again.",
+      "empty": "No photos.",
+      "emptyEditable": "No photos yet — add one straight from the camera.",
+      "download": "Download",
+      "downloadError": "Could not download the photo. Please try again.",
+      "delete": "Delete",
+      "deleteSuccess": "The photo was deleted.",
+      "deleteError": "Could not delete the photo. Please try again."
+    },
+    "documents": {
+      "title": "Accompanying documents",
+      "toggleError": "Could not update the checklist. Please try again.",
+      "attachScan": "Attach scan",
+      "uploadSuccess": "Scan attached to {doc}.",
+      "uploadError": "Could not upload the scan. Please try again.",
+      "download": "Download",
+      "downloadError": "Could not download the scan. Please try again.",
+      "delete": "Delete",
+      "deleteSuccess": "The scan was deleted.",
+      "deleteError": "Could not delete the scan. Please try again."
+    },
+    "signOff": {
+      "title": "Sign off {reference}?",
+      "summary": "{pallets} pallets, {weight} net, {documents} documents ticked.",
+      "blockedEmpty": "A delivery cannot be signed with no pallets recorded.",
+      "blockedUnclassified": "Still missing a waste/reuse decision: {labels}.",
+      "irreversible": "Signing locks the record for good — there is no unsign. Corrections after this are a new record.",
+      "signing": "Signing…",
+      "confirm": "Sign off",
+      "success": "{reference} is signed and locked.",
+      "error": "Could not sign the delivery. Please try again."
+    }
+  },
+  "Suppliers": {
+    "title": "Suppliers",
+    "description": "The companies that deliver, and the codes goods-in records use for them.",
+    "add": "Add supplier",
+    "searchPlaceholder": "Search by code or name…",
+    "searchLabel": "Search suppliers",
+    "loadError": "Could not load the suppliers.",
+    "empty": "No suppliers yet. Add the first one to start recording deliveries.",
+    "noResults": "No suppliers match your search.",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "notes": "Notes",
+      "createdAt": "Added",
+      "actions": "Actions"
+    },
+    "actions": {
+      "label": "Open supplier actions",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "summary": "{from}–{to} of {total}",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "form": {
+      "createTitle": "Add a supplier",
+      "createDescription": "The code is what goods-in paperwork shows; the name stays on this page.",
+      "editTitle": "Edit supplier",
+      "editDescription": "Changing the code changes what every future record shows for this supplier.",
+      "code": "Code",
+      "codeHint": "2–20 letters, digits or dashes, e.g. S014.",
+      "codeTaken": "A supplier already uses this code.",
+      "name": "Name",
+      "nameHint": "Visible only here — goods-in records show the code.",
+      "notes": "Notes",
+      "submitCreate": "Add supplier",
+      "submitEdit": "Save changes",
+      "submitting": "Saving…",
+      "createSuccess": "{code} was added.",
+      "editSuccess": "{code} was saved.",
+      "error": "Could not save the supplier. Please try again."
+    },
+    "remove": {
+      "title": "Delete {code}?",
+      "description": "Deleting is for a supplier that should never have been entered. A supplier with recorded deliveries cannot be deleted — those records must keep saying who delivered.",
+      "confirm": "Delete",
+      "deleting": "Deleting…",
+      "success": "{code} was moved to the trash.",
+      "error": "Could not delete the supplier. Please try again.",
+      "hasDeliveries": "{code} has recorded deliveries and cannot be deleted."
+    },
+    "trash": {
+      "link": "Trash",
+      "title": "Supplier trash",
+      "back": "Back to suppliers",
+      "description": "Deleted suppliers. Restore one to bring it back with its code.",
+      "searchPlaceholder": "Search by code or name…",
+      "searchLabel": "Search the trash",
+      "loadError": "Could not load the trash.",
+      "empty": "The trash is empty.",
+      "noResults": "Nothing in the trash matches your search.",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "deletedAt": "Deleted",
+        "actions": "Actions"
+      },
+      "restore": "Restore",
+      "restoring": "Restoring…",
+      "restoreSuccess": "{code} was restored.",
+      "restoreConflict": "A live supplier now uses {code} — change or delete it first.",
+      "restoreError": "Could not restore the supplier. Please try again.",
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
+      }
+    },
+    "validation": {
+      "code": "The code must be 2–20 letters, digits or dashes, e.g. S014.",
+      "name": "Enter a name (up to 160 characters).",
+      "notesMax": "Notes can be at most 2000 characters."
+    }
+  },
   "Settings": {
     "title": "Settings",
     "description": "Preferences for this admin console.",
@@ -428,7 +770,11 @@
       "Role": "Roles",
       "RoleHint": "Roles and the permissions they grant.",
       "Container": "Containers",
-      "ContainerHint": "Everything running under this console."
+      "ContainerHint": "Everything running under this console.",
+      "Supplier": "Suppliers",
+      "SupplierHint": "Companies delivering e-waste. Supplier names are visible only through this grant — goods-in records show codes.",
+      "Delivery": "Deliveries",
+      "DeliveryHint": "Goods-in records and their pallets."
     },
     "matrix": {
       "subject": "Subject",
@@ -508,6 +854,17 @@
         "maxGrossWeightKg": "Max gross weight (kg)",
         "manufacturedOn": "Manufactured on",
         "nextInspectionOn": "Next inspection"
+      },
+      "Supplier": {
+        "code": "Code",
+        "name": "Name"
+      },
+      "Delivery": {
+        "status": "Status",
+        "deliveryNo": "Delivery number",
+        "deliveredOn": "Delivered on",
+        "lotNo": "Lot number",
+        "signedById": "Signed by"
       }
     },
     "conditionOps": {

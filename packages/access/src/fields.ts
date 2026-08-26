@@ -56,6 +56,17 @@ export const WRITABLE_FIELDS = {
     "notes",
     "assignedToId",
   ],
+  Supplier: ["code", "name", "notes"],
+  /**
+   * `pallets`, `files` and `sign` are entries that are not PATCH body keys, like
+   * `User.roles` and `Role.permissions`: pallet rows, attached files and the sign-off
+   * are written through their own endpoints, but they are *fields of the delivery* as
+   * far as authorization goes. `update Delivery` limited to `["pallets", "files"]` is
+   * a scale-station account that weighs, records and photographs but cannot touch the
+   * header — and cannot sign, because `sign` is a field too: the one that ends the
+   * record, deliberately withholdable from the accounts that fill it in.
+   */
+  Delivery: ["supplierId", "deliveredOn", "lotNo", "documents", "pallets", "files", "sign"],
 } as const satisfies Record<AppResourceSubject, readonly string[]>;
 
 /** Every field name a rule may name for one subject. */

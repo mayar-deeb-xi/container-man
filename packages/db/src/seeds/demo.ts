@@ -7,6 +7,7 @@ import { hashPassword } from "@repo/auth/password";
 import { db } from "../client";
 import { permissions, rolePermissions, roles, userRoles, users } from "../schema";
 import { removeDemoContainers, seedDemoContainers } from "./containers";
+import { removeDemoGoodsIn, seedDemoGoodsIn } from "./goods-in";
 
 /**
  * Demo data: the roles and accounts you need to actually exercise authorization.
@@ -25,8 +26,11 @@ interface DemoRole {
   key: string;
   name: string;
   description: string;
-  /** Grants, as catalog pairs. Every one must exist in `PERMISSION_CATALOG`. */
-  rules: readonly { action: AppAction; subject: AppSubject }[];
+  /**
+   * Grants, as catalog pairs. Every one must exist in `PERMISSION_CATALOG`. `fields`
+   * narrows an `update` grant to those columns, exactly as the console's matrix would.
+   */
+  rules: readonly { action: AppAction; subject: AppSubject; fields?: readonly string[] }[];
 }
 
 /**
@@ -39,6 +43,12 @@ interface DemoRole {
  * - `user-manager` can administer accounts but not what a role means, which is the split
  *   `PUT /users/:id/roles` depends on: it requires `update Role` too, so this role
  *   deliberately cannot assign roles. That refusal is the interesting part.
+ * - `goods-in-clerk` runs the goods-in register end to end — record, weigh, sign —
+ *   without `read Supplier`, which is the confidentiality split working: the clerk
+ *   picks codes from the register's own options and never sees a supplier's name.
+ * - `scale-station` is the field-scoped rule made flesh: `update Delivery` narrowed to
+ *   `pallets` and `files` weighs, records and photographs, but the header inputs grey
+ *   out and the sign-off is not offered.
  */
 const DEMO_ROLES: readonly DemoRole[] = [
   {
@@ -64,6 +74,30 @@ const DEMO_ROLES: readonly DemoRole[] = [
       { action: "read", subject: "Container" },
       { action: "read", subject: "User" },
       { action: "read", subject: "Role" },
+      { action: "read", subject: "Delivery" },
+      { action: "read", subject: "Supplier" },
+    ],
+  },
+  {
+    key: "goods-in-clerk",
+    name: "Goods-in clerk",
+    description:
+      "Records, edits and signs off deliveries. Sees supplier codes only — names need Suppliers.",
+    rules: [
+      { action: "read", subject: "Delivery" },
+      { action: "create", subject: "Delivery" },
+      { action: "update", subject: "Delivery" },
+      { action: "delete", subject: "Delivery" },
+    ],
+  },
+  {
+    key: "scale-station",
+    name: "Scale station",
+    description:
+      "Weighs pallets and attaches photos on open deliveries. Cannot touch the header or sign.",
+    rules: [
+      { action: "read", subject: "Delivery" },
+      { action: "update", subject: "Delivery", fields: ["pallets", "files"] },
     ],
   },
   {
@@ -97,12 +131,19 @@ interface DemoUser {
  */
 const DEMO_USERS: readonly DemoUser[] = [
   { email: "alex.admin@example.com", name: "Alex Admin", roleKeys: [SUPER_ROLE_KEY] },
-  { email: "olivia.operator@example.com", name: "Olivia Operator", roleKeys: ["operator"] },
+  // Runs the yard end to end: the fleet, and the goods-in register including sign-off.
+  {
+    email: "olivia.operator@example.com",
+    name: "Olivia Operator",
+    roleKeys: ["operator", "goods-in-clerk"],
+  },
   { email: "victor.viewer@example.com", name: "Victor Viewer", roleKeys: ["viewer"] },
-  // Two roles on purpose: abilities are the union, so this account is the one that shows
-  // a widened grant, and the one whose row has more than one chip in it.
+  // Two roles on purpose: abilities are the union, so this account shows a widened grant.
   { email: "audrey.auditor@example.com", name: "Audrey Auditor", roleKeys: ["auditor", "viewer"] },
   { email: "maya.manager@example.com", name: "Maya Manager", roleKeys: ["user-manager"] },
+  // The field-scoped rule as an account: weighs and photographs on the goods-in detail
+  // page, header inputs greyed out, no sign-off offered. Sign in as Sami to see it.
+  { email: "sami.scale@example.com", name: "Sami Scale", roleKeys: ["scale-station"] },
   { email: "noah.newcomer@example.com", name: "Noah Newcomer", roleKeys: [] },
 ];
 
@@ -165,9 +206,13 @@ export async function seedDemo(): Promise<void> {
     if (!role) continue;
 
     const grants = definition.rules
-      .map((rule) => permissionIdByKey.get(permissionKey(rule.action, rule.subject)))
-      .filter((id): id is string => id !== undefined)
-      .map((permissionId) => ({ roleId: role.id, permissionId }));
+      .map((rule) => {
+        const permissionId = permissionIdByKey.get(permissionKey(rule.action, rule.subject));
+        return permissionId
+          ? { roleId: role.id, permissionId, fields: rule.fields ? [...rule.fields] : null }
+          : undefined;
+      })
+      .filter((grant): grant is NonNullable<typeof grant> => grant !== undefined);
 
     if (grants.length !== definition.rules.length) {
       throw new Error(
@@ -223,8 +268,10 @@ export async function seedDemo(): Promise<void> {
     );
   }
 
-  // Last, because the fleet is assigned to the accounts created just above.
+  // Last, because the fleet is assigned to — and the goods-in records were checked and
+  // signed by — the accounts created just above.
   await seedDemoContainers();
+  await seedDemoGoodsIn();
 
   console.log(`Demo password: ${password}`);
 }
@@ -254,6 +301,7 @@ export async function removeDemo(): Promise<void> {
   }
 
   await removeDemoContainers();
+  await removeDemoGoodsIn();
 
   console.log(`Removed ${removed.length} demo accounts and ${DEMO_ROLES.length} demo roles.`);
 }
